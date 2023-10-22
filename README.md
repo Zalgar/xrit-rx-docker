@@ -1,3 +1,5 @@
+This is a dockerised version of xrit-rx and is a work in progress
+
 # :satellite: xrit-rx - LRIT/HRIT Downlink Processor
 
 [![GitHub release](https://img.shields.io/github/release/sam210723/xrit-rx.svg)](https://github.com/sam210723/xrit-rx/releases/latest)
