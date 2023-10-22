@@ -1,0 +1,18 @@
+version: "3.5"
+
+services:
+  diun:
+    image: xrit-rx:3
+    container_name: xrit-rx
+    volumes:
+      - "./xrit-rx.ini:/xrit-rx/xrit-rx.ini"
+#      - "./EncryptionKeyMessage.bin:/xrit-rx/EncryptionKeyMessage.bin"
+ #     - type: bind
+ #       source: ./xrit-rx.ini
+ #       target: /xrit-rx/xrit-rx.ini
+ #     - type: bind
+ #       source: ./EncryptionKeyMessage.bin
+ #       target: /xrit-rx/EncryptionKeyMessage.bin
+    ports:
+      - "1692:1692"
+    restart: unless-stopped
