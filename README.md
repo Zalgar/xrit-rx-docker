@@ -1,4 +1,6 @@
 This is a dockerised version of xrit-rx and is a work in progress docker image is available on dockerhub: https://hub.docker.com/r/zalgar/xrit-rx-docker
+A preconfigured docker-compose file is in the docker directory of this repo, you will also need the xrit-rx.ini file and change the goesrecv to point to the correct host.
+
 
 # :satellite: xrit-rx - LRIT/HRIT Downlink Processor
 

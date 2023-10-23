@@ -5,14 +5,8 @@ services:
     image: zalgar/xrit-rx-docker:latest
     container_name: xrit-rx-docker
     volumes:
-      - "./xrit-rx.ini:/xrit-rx/xrit-rx.ini"
-#      - "./EncryptionKeyMessage.bin:/xrit-rx/EncryptionKeyMessage.bin"
- #     - type: bind
- #       source: ./xrit-rx.ini
- #       target: /xrit-rx/xrit-rx.ini
- #     - type: bind
- #       source: ./EncryptionKeyMessage.bin
- #       target: /xrit-rx/EncryptionKeyMessage.bin
+      - "./xrit-rx.ini:/xrit-rx/xrit-rx.ini" #path to config ini
+      - "./received:/xrit-rx/received" #path to received images
     ports:
       - "1692:1692"
     restart: unless-stopped
