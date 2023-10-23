@@ -20,4 +20,4 @@ jobs:
         with:
           context: docker/
           push: true
-          tags: xrit-rx-docker:latest
+          tags: zalgar/xrit-rx-docker:latest
