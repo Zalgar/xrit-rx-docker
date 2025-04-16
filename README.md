@@ -28,17 +28,6 @@ A guide for setting up the hardware and software components of a GK-2A LRIT rece
 
 The [RTL-SDR Blog](https://www.rtl-sdr.com) has also [written a guide](https://www.rtl-sdr.com/rtl-sdr-com-goes-16-17-and-gk-2a-weather-satellite-reception-comprehensive-tutorial/) for setting up the hardware and software required to receive imagery from GOES-16/17 and GK-2A. Once you are able to receive the GK-2A LRIT downlink with **goesrecv**, you can begin installing and configuring **xrit-rx**.
 
-### Installing xrit-rx
-Download the [latest version of **xrit-rx**](https://github.com/sam210723/xrit-rx/releases/latest) (``xrit-rx.zip``) from the Releases page, then unzip the contents to a new folder.
-
-[`numpy`](https://pypi.org/project/numpy), [`pillow`](https://pypi.org/project/Pillow/), [`colorama`](https://pypi.org/project/colorama/) and [`pycryptodome`](https://pypi.org/project/pycryptodome/) are required to run **xrit-rx**. Use the following command to download and install these packages:
-```
-pip3 install -r requirements.txt
-```
-
-Images downlinked from GK-2A are encrypted by the [Korean Meteorological Administration](https://nmsc.kma.go.kr/enhome/html/main/main.do) (KMA). Decryption keys can be downloaded from KMA's website and used with **xrit-rx**.
-More information is [available in the setup guide](https://vksdr.com/xrit-rx#keys).
-
 ### Configuring xrit-rx
 All user-configurable options are found in the [`xrit-rx.ini`](src/xrit-rx.ini) file. The default configuration will work for most situations.
 
