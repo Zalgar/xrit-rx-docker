@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g sass
 
 # Download and extract xrit-rx
-RUN mkdir -p /tmp && \
+RUN mkdir -p /tmp /build && \
     wget https://github.com/Zalgar/xrit-rx-docker/releases/latest/download/xrit-rx.zip -P /tmp/ && \
     unzip /tmp/xrit-rx.zip -d /build
 
