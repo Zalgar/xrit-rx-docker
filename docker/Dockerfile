@@ -5,36 +5,39 @@ FROM node:22-slim AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     unzip \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Sass
 RUN npm install -g sass
 
-# Download and extract xrit-rx
-RUN mkdir -p /tmp /build && \
-    wget https://github.com/Zalgar/xrit-rx-docker/releases/latest/download/xrit-rx.zip -P /tmp/ && \
-    unzip /tmp/xrit-rx.zip -d /build
+# Copy source files instead of downloading release
+COPY ../src /build
+COPY ../requirements.txt /build/requirements.txt
 
 # Ensure CSS is compiled
 WORKDIR /build
 RUN if [ -f html/css/dash.scss ]; then sass --no-source-map html/css/dash.scss html/css/dash.css; fi
 
 # Download and process decryption keys
-RUN wget https://nmsc.kma.go.kr/resources/enhome/resources/satellites/coms/COMS_Decryption_Sample_Cpp.zip -P /tmp/ && \
+RUN mkdir -p /tmp && \
+    wget https://nmsc.kma.go.kr/resources/enhome/resources/satellites/coms/COMS_Decryption_Sample_Cpp.zip -P /tmp/ && \
     unzip /tmp/COMS_Decryption_Sample_Cpp.zip -d /tmp/COMS_Decryption_Sample_Cpp && \
-    cp /tmp/COMS_Decryption_Sample_Cpp/EncryptionKeyMessage_001F2904C905.bin /build/
+    cp /tmp/COMS_Decryption_Sample_Cpp/EncryptionKeyMessage_001F2904C905.bin /build/ && \
+    rm -rf /tmp/COMS_Decryption_Sample_Cpp*
 
 # Final runtime image
-FROM python:3.11-slim
+FROM python:3.12-alpine
 
-# Install only runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libatlas-base-dev \
-    libopenjp2-7-dev \
-    libtiff-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get autoremove -y \
-    && apt-get clean
+# Install only runtime dependencies (Alpine packages)
+RUN apk add --no-cache \
+    lapack-dev \
+    openjpeg-dev \
+    tiff-dev \
+    gcc \
+    musl-dev \
+    g++ \
+    && apk del gcc musl-dev g++
 
 # Copy built application from builder stage
 COPY --from=builder /build /xrit-rx
