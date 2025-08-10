@@ -1,57 +1,66 @@
-# Use a base image with the desired operating system (Debian)
-FROM debian:latest
+# Multi-stage build for smaller final image
+FROM node:22-slim AS builder
 
-# Update the package list and install the required packages, including Python 3 and Node.js
-RUN apt-get update && apt-get install -y ca-certificates python3 python3-pip libatlas-base-dev libopenjp2-7-dev libtiff-dev python3-venv
-RUN apt-get install -y unzip wget curl
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-RUN apt-get install -y nodejs
+# Install only what we need for building
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Sass globally
+# Install Sass
 RUN npm install -g sass
-# Copy the locally downloaded xrit-rx.zip file into the image
-RUN mkdir -p /xrit-rx
-RUN mkdir -p /tmp
-RUN wget https://github.com/Zalgar/xrit-rx-docker/releases/latest/download/xrit-rx.zip -P /tmp/
 
-# Create a virtual environment and activate it
-RUN python3 -m venv /venv
-ENV PATH="/venv/bin:$PATH"
+# Download and extract xrit-rx
+RUN mkdir -p /tmp && \
+    wget https://github.com/Zalgar/xrit-rx-docker/releases/latest/download/xrit-rx.zip -P /tmp/ && \
+    unzip /tmp/xrit-rx.zip -d /build
 
-# Extract xrit-rx.zip
-RUN unzip /tmp/xrit-rx.zip -d /xrit-rx
-
-# Ensure CSS is properly compiled (in case the release doesn't have compiled CSS)
-WORKDIR /xrit-rx
+# Ensure CSS is compiled
+WORKDIR /build
 RUN if [ -f html/css/dash.scss ]; then sass --no-source-map html/css/dash.scss html/css/dash.css; fi
 
-# Debug: List the contents to verify structure
-RUN echo "=== Listing xrit-rx directory structure ===" && find /xrit-rx -type f -name "*.css" -o -name "*.html" | head -20
+# Download and process decryption keys
+RUN wget https://nmsc.kma.go.kr/resources/enhome/resources/satellites/coms/COMS_Decryption_Sample_Cpp.zip -P /tmp/ && \
+    unzip /tmp/COMS_Decryption_Sample_Cpp.zip -d /tmp/COMS_Decryption_Sample_Cpp && \
+    cp /tmp/COMS_Decryption_Sample_Cpp/EncryptionKeyMessage_001F2904C905.bin /build/
 
-# Install pip requirements inside the virtual environment
-RUN pip install -r /xrit-rx/requirements.txt
+# Final runtime image
+FROM python:3.11-slim
 
-# Set the working directory to the xrit-rx directory
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libatlas-base-dev \
+    libopenjp2-7-dev \
+    libtiff-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get autoremove -y \
+    && apt-get clean
+
+# Copy built application from builder stage
+COPY --from=builder /build /xrit-rx
+
+# Set working directory
 WORKDIR /xrit-rx
 
-# Download Decryption key for gk2a and run decryption tool
-RUN wget https://nmsc.kma.go.kr/resources/enhome/resources/satellites/coms/COMS_Decryption_Sample_Cpp.zip -P /tmp/
-RUN unzip /tmp/COMS_Decryption_Sample_Cpp.zip -d /tmp/COMS_Decryption_Sample_Cpp
-RUN cp /tmp/COMS_Decryption_Sample_Cpp/EncryptionKeyMessage_001F2904C905.bin /xrit-rx/
-RUN python3 tools/keymsg-decrypt.py EncryptionKeyMessage_001F2904C905.bin 001F2904C905
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Create an entry script to check for the required files and start the application
+# Process decryption key
+RUN python3 tools/keymsg-decrypt.py EncryptionKeyMessage_001F2904C905.bin 001F2904C905 && \
+    rm EncryptionKeyMessage_001F2904C905.bin
+
+# Copy entry script
 COPY entry.sh /xrit-rx/entry.sh
-
-# Set the entry script as executable
 RUN chmod +x /xrit-rx/entry.sh
 
-#Cleanup
-RUN rm /tmp/xrit-rx.zip
-RUN rm -r /tmp/COMS_Decryption_Sample_Cpp
-RUN rm /tmp/COMS_Decryption_Sample_Cpp.zip
-RUN rm /xrit-rx/EncryptionKeyMessage_001F2904C905.bin
+# Create non-root user for security
+RUN useradd -m -u 1000 xrituser && \
+    chown -R xrituser:xrituser /xrit-rx
+USER xrituser
 
-# Specify the command to run when the container starts
+# Expose port
+EXPOSE 1692
+
+# Start application
 CMD ["/xrit-rx/entry.sh"]
 
