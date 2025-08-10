@@ -17,7 +17,14 @@ COPY requirements.txt /build/requirements.txt
 
 # Ensure CSS is compiled
 WORKDIR /build
-RUN if [ -f html/css/dash.scss ]; then sass --no-source-map html/css/dash.scss html/css/dash.css; fi
+RUN echo "=== Checking for SCSS file ===" && \
+    ls -la html/css/ && \
+    echo "=== Compiling SCSS ===" && \
+    sass --no-source-map html/css/dash.scss html/css/dash.css && \
+    echo "=== Verifying CSS compilation ===" && \
+    head -30 html/css/dash.css && \
+    echo "=== Checking for progress styles ===" && \
+    grep -c "progress" html/css/dash.css || echo "No progress styles found"
 
 # Download and process decryption keys
 RUN mkdir -p /tmp && \
