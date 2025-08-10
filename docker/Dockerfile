@@ -53,7 +53,7 @@ RUN python3 tools/keymsg-decrypt.py EncryptionKeyMessage_001F2904C905.bin 001F29
     rm EncryptionKeyMessage_001F2904C905.bin
 
 # Copy entry script
-COPY entry.sh /xrit-rx/entry.sh
+COPY docker/entry.sh /xrit-rx/entry.sh
 RUN chmod +x /xrit-rx/entry.sh
 
 # Create non-root user for security
