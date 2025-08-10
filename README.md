@@ -1,14 +1,13 @@
-**This is a dockerised version of xrit-rx and is a work in progress docker image is available on dockerhub: https://hub.docker.com/r/zalgar/xrit-rx-docker.**
-
-**A preconfigured docker-compose file is in the docker directory of this repo, you will also need the xrit-rx.ini file and change the goesrecv to point to the correct host.**
-
-
 # :satellite: xrit-rx - LRIT/HRIT Downlink Processor
 
 [![GitHub release](https://img.shields.io/github/release/sam210723/xrit-rx.svg)](https://github.com/sam210723/xrit-rx/releases/latest)
-[![Python versions](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://www.python.org/)
+[![Python versions](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue)](https://www.python.org/)
 [![Github all releases](https://img.shields.io/github/downloads/sam210723/xrit-rx/total.svg)](https://github.com/sam210723/xrit-rx/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/sam210723/xrit-rx.svg)](https://github.com/sam210723/xrit-rx/blob/master/LICENSE)
+
+***
+**⚠️ This software is now outdated. Receiving imagery from GK-2A via LRIT and HRIT is now possible with [SatDump](https://www.satdump.org/).**
+***
 
 **xrit-rx** is a packet demultiplexer and file processor for receiving images from geostationary weather satellite [GEO-KOMPSAT-2A (GK-2A)](https://nmsc.kma.go.kr/enhome/html/base/cmm/selectPage.do?page=satellite.gk2a.intro). It is designed for use with [**goesrecv**](https://github.com/sam210723/goestools) (originally by [Pieter Noordhuis](https://twitter.com/pnoordhuis)), or [**xritdecoder**](https://github.com/opensatelliteproject/xritdemod/releases/tag/1.0.3) by [Lucas Teske](https://twitter.com/lucasteske).
 

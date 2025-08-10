@@ -1,0 +1,4 @@
+numpy>=1.21.0,<3.0.0
+pillow>=10.0.0
+pycryptodome>=3.20.0
+colorama>=0.4.6
