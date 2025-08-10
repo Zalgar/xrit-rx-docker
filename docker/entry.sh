@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Check for the presence of required files
 cd /xrit-rx
