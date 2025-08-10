@@ -65,9 +65,12 @@ RUN apk add --no-cache dos2unix \
     && dos2unix /xrit-rx/entry.sh \
     && chmod +x /xrit-rx/entry.sh
 
-# Create non-root user for security
+# Create non-root user and setup permissions
 RUN adduser -D -u 1000 xrituser && \
-    chown -R xrituser:xrituser /xrit-rx
+    mkdir -p /xrit-rx/received/LRIT && \
+    mkdir -p /xrit-rx/received/HRIT && \
+    chown -R xrituser:xrituser /xrit-rx && \
+    chmod -R 755 /xrit-rx/received
 USER xrituser
 
 # Expose port
