@@ -26,26 +26,22 @@ jobs:
       - name: Create release directory structure
         run: |
           mkdir -p release
-          mkdir -p release/tools
-          mkdir -p release/tools/libjpeg
-          mkdir -p release/html
-          mkdir -p release/html/js
-          mkdir -p release/html/css
           
-      - name: Copy Python files
+      - name: Copy all src files
         run: |
-          cp src/*.py release/
-          cp src/tools/*.py release/tools/
-          cp src/tools/libjpeg/* release/tools/libjpeg/
+          cp -r src/* release/
           
-      - name: Copy HTML and JS files
-        run: |
-          cp src/html/*.html release/html/
-          cp src/html/js/*.js release/html/js/
-          
-      - name: Compile Sass to CSS
+      - name: Compile Sass to CSS (overwrite copied SCSS)
         run: |
           sass --no-source-map src/html/css:release/html/css
+          
+      - name: Clean up development files
+        run: |
+          find release -name "__pycache__" -type d -exec rm -rf {} + || true
+          find release -name "*.pyc" -delete || true
+          find release -name ".DS_Store" -delete || true
+          find release -name "received" -type d -exec rm -rf {} + || true
+          rm -f release/html/css/*.scss || true
           
       - name: Copy config and requirements
         run: |
