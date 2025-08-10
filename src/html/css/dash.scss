@@ -281,3 +281,57 @@ a {
     font-size: 12px;
     color: #999;
 }
+
+/* API Documentation Specific Styles */
+.api-endpoint {
+    margin: 15px 0;
+    padding: 15px;
+    background: #2A2A2A;
+    border: 1px solid #444;
+    border-radius: 6px;
+    border-left: 4px solid #4CAF50;
+
+    h4 {
+        margin: 0 0 10px 0;
+        color: #4CAF50;
+        font-size: 18px;
+        font-family: 'Courier New', monospace;
+    }
+
+    p {
+        margin: 8px 0;
+        color: #CCC;
+        line-height: 1.5;
+    }
+
+    code {
+        background: #1A1A1A;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        color: #FFF;
+        border: 1px solid #555;
+    }
+}
+
+.image-types {
+    margin: 20px 0;
+    padding: 15px;
+    background: #1E1E1E;
+    border: 1px solid #444;
+    border-radius: 6px;
+}
+
+.image-type {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: #2A2A2A;
+    border-left: 3px solid #2196F3;
+    color: #DDD;
+    font-size: 14px;
+
+    strong {
+        color: #2196F3;
+        font-family: 'Courier New', monospace;
+    }
+}
