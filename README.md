@@ -9,6 +9,10 @@
 **⚠️ This software is now outdated. Receiving imagery from GK-2A via LRIT and HRIT is now possible with [SatDump](https://www.satdump.org/).**
 ***
 
+***
+**⚠️ This software is now outdated. Receiving imagery from GK-2A via LRIT and HRIT is now possible with [SatDump](https://www.satdump.org/).**
+***
+
 **xrit-rx** is a packet demultiplexer and file processor for receiving images from geostationary weather satellite [GEO-KOMPSAT-2A (GK-2A)](https://nmsc.kma.go.kr/enhome/html/base/cmm/selectPage.do?page=satellite.gk2a.intro). It is designed for use with [**goesrecv**](https://github.com/sam210723/goestools) (originally by [Pieter Noordhuis](https://twitter.com/pnoordhuis)), or [**xritdecoder**](https://github.com/opensatelliteproject/xritdemod/releases/tag/1.0.3) by [Lucas Teske](https://twitter.com/lucasteske).
 
 **xrit-rx** receives [Virtual Channel Data Units (VCDUs)](https://nmsc.kma.go.kr/resources/homepage/pdf/GK2A_LRIT_Mission_Specification_Document_v1.0.pdf#page=27) over the network from either **goesrecv** or **xritdecoder** and demultiplexes them into separate virtual channels, each containing a different type of image data.
@@ -23,6 +27,7 @@ A guide for setting up the hardware and software components of a GK-2A LRIT rece
 
 The [RTL-SDR Blog](https://www.rtl-sdr.com) has also [written a guide](https://www.rtl-sdr.com/rtl-sdr-com-goes-16-17-and-gk-2a-weather-satellite-reception-comprehensive-tutorial/) for setting up the hardware and software required to receive imagery from GOES-16/17 and GK-2A. Once you are able to receive the GK-2A LRIT downlink with **goesrecv**, you can begin installing and configuring **xrit-rx**.
 
+<<<<<<< HEAD
 ### Installing xrit-rx
 Download the [latest version of **xrit-rx**](https://github.com/Zalgar/xrit-rx-docker/releases/latest) (``xrit-rx.zip``) from the Releases page, then unzip the contents to a new folder.
 
@@ -34,6 +39,8 @@ pip3 install -r requirements.txt
 Images downlinked from GK-2A are encrypted by the [Korean Meteorological Administration](https://nmsc.kma.go.kr/enhome/html/main/main.do) (KMA). Decryption keys can be downloaded from KMA's website and used with **xrit-rx**.
 More information is [available in the setup guide](https://vksdr.com/xrit-rx#keys).
 
+=======
+>>>>>>> 67c098783b37be94107cb4598c921c6a2415c1d4
 ### Configuring xrit-rx
 All user-configurable options are found in the [`xrit-rx.ini`](src/xrit-rx.ini) file. The default configuration will work for most situations.
 
