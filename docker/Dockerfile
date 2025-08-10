@@ -54,7 +54,9 @@ RUN python3 tools/keymsg-decrypt.py EncryptionKeyMessage_001F2904C905.bin 001F29
 
 # Copy entry script
 COPY docker/entry.sh /xrit-rx/entry.sh
-RUN chmod +x /xrit-rx/entry.sh
+RUN apk add --no-cache dos2unix \
+    && dos2unix /xrit-rx/entry.sh \
+    && chmod +x /xrit-rx/entry.sh
 
 # Create non-root user for security
 RUN adduser -D -u 1000 xrituser && \
