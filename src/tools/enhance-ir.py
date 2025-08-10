@@ -1,8 +1,10 @@
 """
 enhance-ir.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 GK-2A Infrared Colour Enhancement
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 import argparse

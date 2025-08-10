@@ -1,8 +1,11 @@
 """
 products.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Parsing and assembly functions for downlinked products
+Enhanced with partial image generation and timestamp tracking
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 import collections
@@ -13,6 +16,7 @@ import numpy as np
 import pathlib
 from PIL import Image, ImageFile, UnidentifiedImageError
 import subprocess
+import time
 
 
 def new(config, name):
@@ -56,6 +60,8 @@ class Product:
         self.alias = "PRODUCT"              # Product type alias
         self.complete = False               # Completed product flag
         self.last = None                    # Path to last file saved
+        self.start_time = time.time()       # When this product started downloading
+        self.last_segment_time = time.time() # When last segment was received
     
     def parse_name(self, n):
         """
@@ -188,6 +194,7 @@ class MultiSegmentImage(Product):
         # Add segment to channel object
         self.images[chan][num] = img
         self.counter += 1
+        self.last_segment_time = time.time()  # Update last segment time
 
         # Update progress bar
         if not self.config.verbose:
@@ -195,7 +202,16 @@ class MultiSegmentImage(Product):
 
         # Mark product as complete
         total_segs = { "LRIT": 10, "HRIT": 50 }
-        if self.counter == total_segs[self.config.downlink]: self.complete = True
+        expected_total = total_segs[self.config.downlink]
+        
+        # Check for normal completion
+        if self.counter == expected_total:
+            self.complete = True
+        # Check for timeout-based completion (if we haven't received segments for 2 minutes and have at least 70%)
+        elif (time.time() - self.last_segment_time > 120 and 
+              self.counter >= (expected_total * 0.7)):
+            print(f"    " + Fore.YELLOW + Style.BRIGHT + f"COMPLETING PARTIAL PRODUCT ({self.counter}/{expected_total} segments, 2min timeout)")
+            self.complete = True
         
         # Save partial image preview if we have enough segments
         if self.counter >= 3 and not self.complete:

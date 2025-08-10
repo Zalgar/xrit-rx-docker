@@ -1,8 +1,10 @@
 """
 ccsds.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Parsing and assembly functions for all CCSDS protocol layers
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 from Crypto.Cipher import DES

@@ -1,8 +1,10 @@
 """
 lrit-img.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Generates JPEG images from LRIT IMG files.
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 import argparse

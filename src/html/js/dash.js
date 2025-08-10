@@ -1,9 +1,12 @@
 'use strict';
 /**
  *  dash.js
- *  https://github.com/sam210723/xrit-rx
+ *  https://github.com/Zalgar/xrit-rx-docker
  *  
  *  Updates dashboard data through xrit-rx API
+ *  Enhanced with real-time progress tracking and partial image display
+ *
+ *  Original work by sam210723: https://github.com/sam210723/xrit-rx
  */
 
 var config = {};
@@ -88,7 +91,7 @@ function configure()
     // Set heading and window title
     var heading = document.getElementById("dash-heading");
     heading.innerHTML =  `${config.spacecraft} ${config.downlink} Dashboard`;
-    heading.innerHTML += `<span><a href="api-docs.html" style="color: #777; text-decoration: none; margin-right: 20px;">API Docs</a>xrit-rx <a href="https://github.com/sam210723/xrit-rx/releases/tag/v${config.version}" target="_blank" title="Release notes on GitHub">v${config.version}</a></span>`;
+    heading.innerHTML += `<span><a href="api-docs.html" style="color: #777; text-decoration: none; margin-right: 20px;">API Docs</a>xrit-rx <a href="https://github.com/Zalgar/xrit-rx-docker/releases/tag/v${config.version}" target="_blank" title="Release notes on GitHub">v${config.version}</a></span>`;
     document.title = `${config.spacecraft} ${config.downlink} - xrit-rx v${config.version}`;
 
     // Build blocks

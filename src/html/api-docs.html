@@ -3,18 +3,37 @@
     <head>
         <title>xrit-rx API Documentation</title>
 
-        <link href='https://fonts.googleapis.com/css?f                    <div class="api-endpoint">
-                        <code>curl http://localhost:8080/api/current/progress</code>
-                        <p>Get real-time download progress for active multi-segment products</p>
-                    </div>
-
-                    <div class="api-endpoint">
-                        <code>curl http://localhost:8080/api/latest/fd/partial --output partial_fd.jpg</code>
-                        <p>Download partial/preview image of currently downloading Full Disk image</p>
-                    </div>y=Roboto' rel='stylesheet'>
+        <!-- Preconnect to Google Fonts for faster loading -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        
+        <!-- Load fonts asynchronously to prevent blocking -->
+        <link href='https://fonts.googleapis.com/css?family=Roboto&display=swap' rel='stylesheet' media="print" onload="this.media='all'">
+        <noscript><link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'></noscript>
+        
+        <!-- Local CSS loads first -->
         <link rel="stylesheet" href="css/dash.css" />
 
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <!-- Fallback fonts style for immediate rendering -->
+        <style>
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+            }
+            /* Performance optimizations */
+            .api-endpoint { contain: layout; }
+            .image-type { contain: layout; }
+            /* Reduce paint operations */
+            #container { will-change: auto; }
+            /* Optimize font rendering */
+            body { 
+                -webkit-font-smoothing: antialiased; 
+                -moz-osx-font-smoothing: grayscale; 
+                text-rendering: optimizeSpeed;
+            }
+        </style>
     </head>
 
     <body>
@@ -22,7 +41,7 @@
             xrit-rx API Documentation
             <span>
                 <a href="/" style="color: #777; text-decoration: none; margin-right: 20px;">← Back to Dashboard</a>
-                xrit-rx <a href="https://github.com/sam210723/xrit-rx" target="_blank" title="xrit-rx on GitHub">GitHub</a>
+                xrit-rx <a href="https://github.com/Zalgar/xrit-rx-docker" target="_blank" title="xrit-rx on GitHub">GitHub</a>
             </span>
         </h2>
 
@@ -35,108 +54,95 @@
                     <h4>System Information</h4>
                     <div class="api-endpoint">
                         <code>GET /api</code>
-                        <p>Returns system configuration and status information</p>
+                        <p>Returns system configuration and status information including spacecraft, downlink type, output paths, and enabled features.</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>GET /api/docs</code>
+                        <p>Returns comprehensive API documentation in JSON format with endpoint descriptions and example usage.</p>
                     </div>
 
                     <h4>Current Status</h4>
                     <div class="api-endpoint">
                         <code>GET /api/current/vcid</code>
-                        <p>Returns the currently processing Virtual Channel ID</p>
+                        <p>Returns the currently processing Virtual Channel ID (VCID). Useful for monitoring which data stream is active.</p>
                     </div>
 
                     <div class="api-endpoint">
                         <code>GET /api/current/progress</code>
-                        <p>Returns real-time download progress for all active multi-segment products</p>
+                        <p>Returns real-time download progress for all active multi-segment products. Includes segment counts, progress percentages, and channel-specific details.</p>
                     </div>
 
                     <div class="api-endpoint">
                         <code>GET /api/current/partial</code>
-                        <p>Returns information about available partial/preview images for active downloads</p>
+                        <p>Returns information about available partial/preview images for active downloads. Shows which products have partial images ready for viewing.</p>
                     </div>
 
                     <h4>Latest Images</h4>
                     <div class="api-endpoint">
                         <code>GET /api/latest/image</code>
-                        <p>Returns metadata for the most recent image of any type</p>
+                        <p>Returns metadata for the most recent completed image of any type, including file path, hash, and image type.</p>
                     </div>
                     
                     <div class="api-endpoint">
                         <code>GET /api/latest/{type}</code>
-                        <p>Returns metadata for the most recent image of a specific type</p>
-                        <small>Replace {type} with one of the image types below</small>
+                        <p>Returns metadata for the most recent completed image of a specific type (e.g., FD, SICEF24, etc.).</p>
+                        <small>Replace {type} with one of the image types listed below (case-insensitive)</small>
                     </div>
 
                     <div class="api-endpoint">
                         <code>GET /api/latest/{type}/image</code>
-                        <p>Returns the actual image file for the most recent image of a specific type</p>
+                        <p>Returns the actual completed image file for the most recent image of a specific type. Content-Type header is set appropriately.</p>
                     </div>
 
                     <div class="api-endpoint">
                         <code>GET /api/latest/{type}/partial</code>
-                        <p>Returns partial/preview image file for actively downloading products (shows segments received so far)</p>
+                        <p>Returns partial/preview image file for actively downloading products. Shows segments received so far with black areas for missing segments. Updated in real-time as new segments arrive.</p>
                     </div>
 
-                    <h4>Expected Image Types</h4>
-                    <div class="image-types">
-                        <div class="image-type">
-                            <strong>FD</strong> - Full Disk imagery covering the entire Earth hemisphere
-                        </div>
-                        <div class="image-type">
-                            <strong>SICEF24</strong> - Sea Ice and Cloud Edge Forecast (24-hour)
-                        </div>
-                        <div class="image-type">
-                            <strong>SICEF48</strong> - Sea Ice and Cloud Edge Forecast (48-hour)
-                        </div>
-                        <div class="image-type">
-                            <strong>SSTF24</strong> - Sea Surface Temperature Forecast (24-hour)
-                        </div>
-                        <div class="image-type">
-                            <strong>SSTF48</strong> - Sea Surface Temperature Forecast (48-hour)
-                        </div>
-                        <div class="image-type">
-                            <strong>SSTF72</strong> - Sea Surface Temperature Forecast (72-hour)
-                        </div>
-                        <div class="image-type">
-                            <strong>FOGVIS</strong> - Fog Visibility forecast imagery
-                        </div>
-                        <div class="image-type">
-                            <strong>COMSFOG</strong> - Communication Satellite Fog imagery
-                        </div>
-                        <div class="image-type">
-                            <strong>FCT</strong> - Forecast data products
-                        </div>
-                        <div class="image-type">
-                            <strong>GWW3F</strong> - Global Wave Watch III Forecast
-                        </div>
-                        <div class="image-type">
-                            <strong>RWW3A</strong> - Regional Wave Watch III Analysis
-                        </div>
-                        <div class="image-type">
-                            <strong>SUFA03</strong> - Surface Analysis (3-hour)
-                        </div>
-                        <div class="image-type">
-                            <strong>ADD</strong> - Additional data products and supplementary imagery
-                        </div>
-                    </div>
-
-                    <h4>Other Data</h4>
+                    <h4>xRIT Files</h4>
                     <div class="api-endpoint">
                         <code>GET /api/latest/xrit</code>
-                        <p>Returns metadata for the most recent xRIT file</p>
+                        <p>Returns metadata for the most recent xRIT file processed, including file path and processing information.</p>
                     </div>
 
-                    <div class="api-endpoint">
-                        <code>GET /api/docs</code>
-                        <p>Returns comprehensive API documentation in JSON format</p>
+                    <h4>Supported Image Types</h4>
+                    <p>GK-2A LRIT data stream image types:</p>
+                    <div class="image-types">
+                        <div class="image-type"><strong>FD</strong> - Full Disk imagery</div>
+                        <div class="image-type"><strong>SICEF24</strong> - Sea Ice and Cloud Edge Forecast (24h)</div>
+                        <div class="image-type"><strong>SICEF48</strong> - Sea Ice and Cloud Edge Forecast (48h)</div>
+                        <div class="image-type"><strong>SSTF24</strong> - Sea Surface Temperature Forecast (24h)</div>
+                        <div class="image-type"><strong>SSTF48</strong> - Sea Surface Temperature Forecast (48h)</div>
+                        <div class="image-type"><strong>SSTF72</strong> - Sea Surface Temperature Forecast (72h)</div>
+                        <div class="image-type"><strong>FOGVIS</strong> - Fog Visibility forecast</div>
+                        <div class="image-type"><strong>COMSFOG</strong> - Communication Satellite Fog imagery</div>
+                        <div class="image-type"><strong>FCT</strong> - Forecast data products</div>
+                        <div class="image-type"><strong>GWW3F</strong> - Global Wave Watch III Forecast</div>
+                        <div class="image-type"><strong>RWW3A</strong> - Regional Wave Watch III Analysis</div>
+                        <div class="image-type"><strong>SUFA03</strong> - Surface Analysis (3h intervals)</div>
+                        <div class="image-type"><strong>ANT</strong> - Alphanumeric Text (schedules)</div>
+                        <div class="image-type"><strong>ADD</strong> - Additional data products</div>
                     </div>
 
-                    <h4>Response Format</h4>
-                    <p>All API endpoints return JSON responses except for image file endpoints which return the raw image data with appropriate MIME types.</p>
+                    <h4>Response Formats</h4>
+                    <p><strong>JSON Endpoints:</strong> Most endpoints return JSON with appropriate content-type headers.</p>
+                    <p><strong>Image Endpoints:</strong> Image file endpoints return raw binary data with MIME types like image/jpeg, image/png, etc.</p>
+                    <p><strong>Error Responses:</strong> Failed requests return JSON with error messages and appropriate HTTP status codes.</p>
+
+                    <h4>Download Progress Features</h4>
+                    <ul>
+                        <li><strong>Segment Tracking:</strong> Monitor multi-part image segments</li>
+                        <li><strong>Progress Percentage:</strong> Real-time completion status</li>
+                        <li><strong>Partial Previews:</strong> Live image previews during download</li>
+                        <li><strong>Timeout Handling:</strong> Auto-completion for incomplete downloads</li>
+                        <li><strong>Real-time Updates:</strong> Dashboard auto-refresh</li>
+                    </ul>
 
                     <h4>Example Usage</h4>
                     <div class="api-endpoint">
                         <code>curl http://localhost:1692/api</code>
-                        <p>Get system configuration and status</p>
+                        <p>Get system configuration and status information</p>
                     </div>
 
                     <div class="api-endpoint">
@@ -146,7 +152,12 @@
 
                     <div class="api-endpoint">
                         <code>curl http://localhost:1692/api/latest/fd/image --output latest_fd.jpg</code>
-                        <p>Download the latest Full Disk image file</p>
+                        <p>Download the latest completed Full Disk image file</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>curl http://localhost:1692/api/latest/fd/partial --output partial_fd.jpg</code>
+                        <p>Download partial/preview image of currently downloading Full Disk image</p>
                     </div>
 
                     <div class="api-endpoint">
@@ -154,16 +165,33 @@
                         <p>Get real-time download progress for active multi-segment products</p>
                     </div>
 
-                    <h4>Error Responses</h4>
-                    <p>When a resource is not found or an error occurs, the API returns appropriate HTTP status codes:</p>
+                    <div class="api-endpoint">
+                        <code>curl http://localhost:1692/api/current/vcid</code>
+                        <p>Check which Virtual Channel ID is currently being processed</p>
+                    </div>
+
+                    <h4>HTTP Status Codes</h4>
                     <ul>
-                        <li><strong>200 OK</strong> - Request successful</li>
+                        <li><strong>200 OK</strong> - Request successful, data returned</li>
                         <li><strong>404 Not Found</strong> - Resource not available or doesn't exist</li>
-                        <li><strong>500 Internal Server Error</strong> - Server error occurred</li>
+                        <li><strong>500 Internal Server Error</strong> - Server error occurred during processing</li>
                     </ul>
 
-                    <h4>CORS Support</h4>
-                    <p>The API supports Cross-Origin Resource Sharing (CORS) for web applications making requests from different domains.</p>
+                    <h4>CORS and Cross-Domain Access</h4>
+                    <p>CORS enabled for cross-domain API access and external monitoring dashboards.</p>
+
+                    <h4>Rate Limiting and Performance</h4>
+                    <ul>
+                        <li>No rate limiting - designed for real-time monitoring</li>
+                        <li>Progress updates every few seconds</li>
+                        <li>Images served directly from disk</li>
+                        <li>Partial images regenerated only when new segments arrive</li>
+                    </ul>
+
+                    <h4>Integration Notes</h4>
+                    <p><strong>Dashboard:</strong> Web UI uses these APIs for real-time monitoring.<br>
+                    <strong>External Apps:</strong> Build custom monitoring solutions.<br>
+                    <strong>Automation:</strong> Automated download monitoring and alerting.</p>
                 </div>
             </div>
         </div>

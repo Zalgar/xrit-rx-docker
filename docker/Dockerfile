@@ -7,7 +7,7 @@ RUN apt-get install -y unzip wget
 # Copy the locally downloaded xrit-rx.zip file into the image
 RUN mkdir -p /xrit-rx
 RUN mkdir -p /tmp
-RUN wget https://github.com/sam210723/xrit-rx/releases/latest/download/xrit-rx.zip -P /tmp/
+RUN wget https://github.com/Zalgar/xrit-rx-docker/releases/latest/download/xrit-rx.zip -P /tmp/
 
 # Create a virtual environment and activate it
 RUN python3 -m venv /venv

@@ -1,8 +1,11 @@
 """
 dash.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Dashboard HTTP server
+Enhanced with real-time progress tracking and partial image features
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 from colorama import Fore, Back, Style
@@ -124,7 +127,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 else:                                                   # Requested file not found (HTTP 404)
                     self.send_response(404)
                     self.end_headers()
-        except ConnectionAbortedError:
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            # Client disconnected, nothing we can do
+            return
+        except Exception as e:
+            # Log other exceptions but don't crash
+            print(f"HTTP Server Error: {e}")
             return
     
 

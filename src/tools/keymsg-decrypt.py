@@ -1,8 +1,10 @@
 """
 keymsg-decrypt.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Decrypts KMA Encryption Key Message files for GK-2A xRIT decryption.
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 import argparse

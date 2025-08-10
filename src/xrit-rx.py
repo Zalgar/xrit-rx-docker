@@ -1,8 +1,11 @@
 """
 xrit-rx.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Frontend for CCSDS demultiplexer and image generator
+Enhanced with real-time monitoring features
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 import ast
@@ -41,7 +44,7 @@ dash = None             # Dashboard class object
 dashe = None            # Dashboard enabled flag
 dashp = None            # Dashboard HTTP port
 dashi = None            # Dashboard refresh interval (sec)
-ver = "1.3.1"           # xrit-rx version
+ver = "2.0.0"           # xrit-rx version
 
 
 def init():

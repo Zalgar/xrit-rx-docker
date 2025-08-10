@@ -1,6 +1,11 @@
 """
 demuxer.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
+
+CCSDS demultiplexer for LRIT/HRIT downlink streams
+Enhanced with real-time progress tracking and timeout handling
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 from collections import deque, namedtuple
@@ -8,6 +13,7 @@ import colorama
 from colorama import Fore, Back, Style
 import hashlib
 import os
+import time
 from time import sleep
 from threading import Thread
 import sys
@@ -40,6 +46,7 @@ class Demuxer:
         self.lastXRIT = None            # Last xRIT file output by demuxer
         self.currentProgress = {}       # Current download progress for active products
         self.partialImages = {}         # Dictionary of partial images by type {type: {'path': path, 'segments': count}}
+        self.last_timeout_check = time.time()  # Last time we checked for timeouts
 
         if self.config.downlink == "LRIT":
             self.coreWait = 54          # Core loop delay in ms for LRIT (108.8ms per packet @ 64 kbps)
@@ -129,7 +136,14 @@ class Demuxer:
                 # Pass VCDU to appropriate channel handler
                 self.channels[vcdu.VCID].data_in(vcdu)
             else:
-                # No packet available, sleep thread
+                # No packet available, check for timeouts periodically
+                current_time = time.time()
+                if current_time - self.last_timeout_check > 30:  # Check every 30 seconds
+                    for channel in self.channels.values():
+                        channel.check_product_timeout()
+                    self.last_timeout_check = current_time
+                
+                # Sleep thread
                 sleep(self.coreWait / 1000)
         
         # Gracefully exit core thread
@@ -400,9 +414,37 @@ class Channel:
             if self.cProduct is None:
                 self.cProduct = products.new(self.config, xrit.FILE_NAME)
                 self.cProduct.print_info()
+            # Check if this is a different product (new sequence)
+            elif (hasattr(self.cProduct, 'name') and 
+                  self.cProduct.name.sequence != int(xrit.FILE_NAME.split("_")[2])):
+                # Force complete the previous product if it has enough segments
+                if (hasattr(self.cProduct, 'counter') and 
+                    self.cProduct.counter >= 3 and 
+                    not self.cProduct.complete):
+                    print(f"    " + Fore.YELLOW + Style.BRIGHT + 
+                          f"COMPLETING PREVIOUS PRODUCT ({self.cProduct.counter} segments, new sequence started)")
+                    self.cProduct.complete = True
+                    self.cProduct.save()
+                    self.demuxer.lastImage = self.cProduct.last
+                    self._update_image_metadata(self.cProduct.last)
+                    
+                    # Clean up tracking
+                    product_key = f"{self.cProduct.name.full}_{self.cProduct.name.mode}"
+                    if product_key in self.demuxer.currentProgress:
+                        del self.demuxer.currentProgress[product_key]
+                    product_type = self.cProduct.name.mode
+                    if product_type in self.demuxer.partialImages:
+                        del self.demuxer.partialImages[product_type]
+                
+                # Start new product
+                self.cProduct = products.new(self.config, xrit.FILE_NAME)
+                self.cProduct.print_info()
             
             # Add data to current product
             self.cProduct.add(xrit)
+            
+            # Check if product should timeout
+            self.check_product_timeout()
 
             # Update progress tracking for multi-segment products
             if hasattr(self.cProduct, 'counter') and hasattr(self.cProduct, 'images'):
@@ -489,6 +531,27 @@ class Channel:
                 # Save and clear current product
                 self.cProduct.save()
                 self.cProduct = None
+
+    def check_product_timeout(self):
+        """
+        Check if current product has timed out and should be completed
+        """
+        if (self.cProduct is not None and 
+            hasattr(self.cProduct, 'last_segment_time') and
+            not self.cProduct.complete):
+            
+            total_segs = {"LRIT": 10, "HRIT": 50}
+            expected_total = total_segs.get(self.config.downlink, 10)
+            
+            # If we haven't received segments for 2 minutes and have at least 70%
+            time_since_last = time.time() - self.cProduct.last_segment_time
+            completion_threshold = expected_total * 0.7
+            
+            if (time_since_last > 120 and self.cProduct.counter >= completion_threshold):
+                print(f"    " + Fore.YELLOW + Style.BRIGHT + 
+                      f"TIMING OUT PRODUCT ({self.cProduct.counter}/{expected_total} segments, "
+                      f"{int(time_since_last)}s since last segment)")
+                self.cProduct.complete = True
 
     def _update_image_metadata(self, image_path):
         """

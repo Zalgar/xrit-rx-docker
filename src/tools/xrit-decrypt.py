@@ -1,8 +1,10 @@
 """
 xrit-decrypt.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Decrypts xRIT files into a plain-text xRIT file using single layer DES
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 import argparse

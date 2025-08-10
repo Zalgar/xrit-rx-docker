@@ -1,8 +1,10 @@
 """
 lrit-add.py
-https://github.com/sam210723/xrit-rx
+https://github.com/Zalgar/xrit-rx-docker
 
 Extracts data from LRIT Additional Data (ADD) files.
+
+Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 import argparse
