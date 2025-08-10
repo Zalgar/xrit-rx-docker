@@ -57,7 +57,7 @@ COPY docker/entry.sh /xrit-rx/entry.sh
 RUN chmod +x /xrit-rx/entry.sh
 
 # Create non-root user for security
-RUN useradd -m -u 1000 xrituser && \
+RUN adduser -D -u 1000 xrituser && \
     chown -R xrituser:xrituser /xrit-rx
 USER xrituser
 
