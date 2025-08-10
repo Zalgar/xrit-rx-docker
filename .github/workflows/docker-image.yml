@@ -33,7 +33,14 @@ jobs:
           
       - name: Compile Sass to CSS (overwrite copied SCSS)
         run: |
-          sass --no-source-map src/html/css:release/html/css
+          sass --no-source-map src/html/css/dash.scss:release/html/css/dash.css
+          
+      - name: Verify CSS compilation
+        run: |
+          echo "=== Checking CSS files ==="
+          ls -la release/html/css/
+          echo "=== CSS file content preview ==="
+          head -20 release/html/css/dash.css
           
       - name: Clean up development files
         run: |

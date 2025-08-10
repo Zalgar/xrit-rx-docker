@@ -1,9 +1,14 @@
 # Use a base image with the desired operating system (Debian)
 FROM debian:latest
 
-# Update the package list and install the required packages, including Python 3
+# Update the package list and install the required packages, including Python 3 and Node.js
 RUN apt-get update && apt-get install -y ca-certificates python3 python3-pip libatlas-base-dev libopenjp2-7-dev libtiff-dev python3-venv
-RUN apt-get install -y unzip wget
+RUN apt-get install -y unzip wget curl
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+RUN apt-get install -y nodejs
+
+# Install Sass globally
+RUN npm install -g sass
 # Copy the locally downloaded xrit-rx.zip file into the image
 RUN mkdir -p /xrit-rx
 RUN mkdir -p /tmp
@@ -15,6 +20,13 @@ ENV PATH="/venv/bin:$PATH"
 
 # Extract xrit-rx.zip
 RUN unzip /tmp/xrit-rx.zip -d /xrit-rx
+
+# Ensure CSS is properly compiled (in case the release doesn't have compiled CSS)
+WORKDIR /xrit-rx
+RUN if [ -f html/css/dash.scss ]; then sass --no-source-map html/css/dash.scss html/css/dash.css; fi
+
+# Debug: List the contents to verify structure
+RUN echo "=== Listing xrit-rx directory structure ===" && find /xrit-rx -type f -name "*.css" -o -name "*.html" | head -20
 
 # Install pip requirements inside the virtual environment
 RUN pip install -r /xrit-rx/requirements.txt
