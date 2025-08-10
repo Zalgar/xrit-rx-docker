@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g sass
 
 # Copy source files instead of downloading release
-COPY ../src /build
-COPY ../requirements.txt /build/requirements.txt
+COPY src /build
+COPY requirements.txt /build/requirements.txt
 
 # Ensure CSS is compiled
 WORKDIR /build
