@@ -21,7 +21,7 @@ RUN if [ -f html/css/dash.scss ]; then sass --no-source-map html/css/dash.scss h
 
 # Download and process decryption keys
 RUN mkdir -p /tmp && \
-    wget https://nmsc.kma.go.kr/resources/enhome/resources/satellites/coms/COMS_Decryption_Sample_Cpp.zip -P /tmp/ && \
+    wget --no-check-certificate https://nmsc.kma.go.kr/resources/enhome/resources/satellites/coms/COMS_Decryption_Sample_Cpp.zip -P /tmp/ && \
     unzip /tmp/COMS_Decryption_Sample_Cpp.zip -d /tmp/COMS_Decryption_Sample_Cpp && \
     cp /tmp/COMS_Decryption_Sample_Cpp/EncryptionKeyMessage_001F2904C905.bin /build/ && \
     rm -rf /tmp/COMS_Decryption_Sample_Cpp*
