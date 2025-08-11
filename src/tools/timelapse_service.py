@@ -32,15 +32,33 @@ class TimelapseService:
         self.check_interval = check_interval
         self.timelapse_script = os.path.join(os.path.dirname(__file__), "timelapse.py")
         
-        # Ensure output directory exists
-        os.makedirs(self.output_dir, exist_ok=True)
-        
-        # Setup logging
+        # Setup logging first
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - Timelapse Service - %(levelname)s - %(message)s'
         )
         self.logger = logging.getLogger(__name__)
+        
+        # Log initialization details
+        self.logger.info(f"Initializing timelapse service...")
+        self.logger.info(f"Received directory: {os.path.abspath(received_dir)}")
+        self.logger.info(f"Output directory: {os.path.abspath(self.output_dir)}")
+        self.logger.info(f"Timelapse script: {os.path.abspath(self.timelapse_script)}")
+        
+        # Check if directories exist
+        if not os.path.exists(received_dir):
+            self.logger.warning(f"Received directory does not exist: {received_dir}")
+        
+        if not os.path.exists(self.timelapse_script):
+            self.logger.error(f"Timelapse script not found: {self.timelapse_script}")
+        
+        # Ensure output directory exists
+        try:
+            os.makedirs(self.output_dir, exist_ok=True)
+            self.logger.info(f"✓ Timelapses directory created/verified: {self.output_dir}")
+        except Exception as e:
+            self.logger.error(f"✗ Failed to create timelapses directory: {e}")
+            raise
         
         # Track last generation times
         self.last_generation = {

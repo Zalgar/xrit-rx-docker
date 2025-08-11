@@ -63,13 +63,18 @@ def start_timelapse_service():
             print(Fore.YELLOW + Style.BRIGHT + "TIMELAPSE SERVICE SCRIPT NOT FOUND - SKIPPING")
             return
             
-        # Start timelapse service as background process
-        timelapse_process = subprocess.Popen([
-            "python3", timelapse_script,
-            "--received", output
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Create log file for timelapse service debugging
+        log_file = path.join(output, "timelapse_service.log")
+        
+        # Start timelapse service as background process with logging
+        with open(log_file, 'w') as log:
+            timelapse_process = subprocess.Popen([
+                "python3", timelapse_script,
+                "--received", output
+            ], stdout=log, stderr=subprocess.STDOUT)
         
         print(Fore.GREEN + Style.BRIGHT + f"TIMELAPSE SERVICE STARTED (PID: {timelapse_process.pid})")
+        print(Fore.GREEN + Style.BRIGHT + f"TIMELAPSE LOG: {log_file}")
         
     except Exception as e:
         print(Fore.YELLOW + Style.BRIGHT + f"TIMELAPSE SERVICE FAILED TO START: {e}")
