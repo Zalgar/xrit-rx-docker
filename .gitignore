@@ -112,5 +112,5 @@ release/*
 #*.map
 *.zip
 .vscode/*
-src/xrit-rx.ini
 xrit-rx.ini
+*/xrit-rx.ini
