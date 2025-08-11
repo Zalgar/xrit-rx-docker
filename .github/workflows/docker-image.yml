@@ -30,6 +30,10 @@ jobs:
       - name: Copy all src files
         run: |
           cp -r src/* release/
+          echo "=== Verifying src copy completed ==="
+          ls -la release/
+          echo "=== Checking if tools directory exists ==="
+          ls -la release/tools/ || echo "Tools directory not found!"
           
       - name: Compile Sass to CSS (overwrite copied SCSS)
         run: |
@@ -52,10 +56,26 @@ jobs:
           find release -name "received" -type d -exec rm -rf {} + || true
           rm -f release/html/css/*.scss || true
           
+      - name: Verify tools directory contents
+        run: |
+          echo "=== Checking tools directory contents ==="
+          ls -la release/tools/
+          echo "=== Checking for timelapse scripts ==="
+          ls -la release/tools/timelapse* || echo "No timelapse scripts found"
+          echo "=== Full release directory structure ==="
+          find release -type f | head -20
+          
       - name: Copy config and requirements
         run: |
           cp src/*.ini release/ || true
           cp requirements.txt release/
+          
+      - name: Set executable permissions for scripts
+        run: |
+          chmod +x release/tools/*.py || true
+          chmod +x release/tools/*.sh || true
+          echo "=== Verifying script permissions ==="
+          ls -la release/tools/timelapse* || echo "No timelapse scripts found"
           
       - name: Create zip archive
         run: |

@@ -107,6 +107,7 @@ venv.bak/
 *desktop.ini
 EncryptionKeyMessage.bin
 src/received/*
+docker/received/*
 release/*
 #*.css
 #*.map
