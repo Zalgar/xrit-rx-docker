@@ -69,6 +69,10 @@ function init()
                 
                 // Configure dashboard
                 if (!configure()) { return; }
+                
+                // Load available timelapses
+                loadTimelapses();
+                
                 print("Ready", "DASH");
             })
         }
@@ -513,4 +517,68 @@ function block_progress(element)
         
         progressList.appendChild(progressItem);
     }
+}
+
+/**
+ * Load available pre-rendered timelapses
+ */
+function loadTimelapses() {
+    // Simple approach: serve static files
+    // The background service creates files like latest_3h_mp4.mp4, latest_24h_gif.gif
+    const timelapseFiles = [
+        { name: '3h MP4', file: 'latest_3h_mp4.mp4', hours: 3, format: 'MP4' },
+        { name: '24h MP4', file: 'latest_24h_mp4.mp4', hours: 24, format: 'MP4' },
+        { name: '3h GIF', file: 'latest_3h_gif.gif', hours: 3, format: 'GIF' },
+        { name: '24h GIF', file: 'latest_24h_gif.gif', hours: 24, format: 'GIF' }
+    ];
+    
+    const statusElement = document.getElementById('timelapse-status');
+    let statusHTML = '<div style="font-size: 12px; margin-top: 5px;">Available Downloads:</div>';
+    
+    timelapses.forEach(tl => {
+        const downloadUrl = `/api/received/timelapses/${tl.file}`;
+        statusHTML += `<div style="margin: 2px 0;">`;
+        statusHTML += `<a href="${downloadUrl}" download style="color: #4CAF50; text-decoration: none; font-size: 11px;">`;
+        statusHTML += `📥 ${tl.name}</a> `;
+        statusHTML += `<span style="color: #888; font-size: 10px;" onclick="checkFileAge('${tl.file}')" style="cursor: pointer;">ℹ️</span>`;
+        statusHTML += `</div>`;
+    });
+    
+    statusElement.innerHTML = statusHTML;
+}
+
+/**
+ * Check file age and availability
+ */
+function checkFileAge(filename) {
+    // This could be enhanced to show file age/availability via API
+    console.log(`Checking ${filename} availability...`);
+}
+
+/**
+ * Refresh timelapse list
+ */
+function refreshTimelapses() {
+    const statusElement = document.getElementById('timelapse-status');
+    statusElement.innerHTML = '<span style="color: #FFA500;">Refreshing...</span>';
+    
+    // Simply reload the static list
+    setTimeout(() => {
+        loadTimelapses();
+    }, 1000);
+}
+
+/**
+ * Create timelapse video or GIF (now just refreshes the list)
+ */
+function createTimelapse(hours, type, format) {
+    const statusElement = document.getElementById('timelapse-status');
+    
+    statusElement.innerHTML = `<span style="color: #4CAF50;">Timelapses are generated automatically every hour!</span><br>` +
+                             `<span style="color: #CCC; font-size: 11px;">Check back in a few minutes for updated ${hours}h ${format.toUpperCase()} timelapse.</span>`;
+    
+    // Refresh the list after a moment
+    setTimeout(() => {
+        loadTimelapses();
+    }, 3000);
 }

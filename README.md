@@ -30,6 +30,48 @@ pip3 install -r requirements.txt
 Images downlinked from GK-2A are encrypted by the [Korean Meteorological Administration](https://nmsc.kma.go.kr/enhome/html/main/main.do) (KMA). Decryption keys can be downloaded from KMA's website and used with **xrit-rx**.
 More information is [available in the setup guide](https://vksdr.com/xrit-rx#keys).
 
+### Docker Installation & Setup
+For containerized deployment, use the pre-built Docker image available on Docker Hub:
+
+```bash
+docker pull zalgar/xrit-rx-docker:latest
+```
+
+Or use the provided `docker-compose.yml` file in the `docker/` directory for easy deployment.
+
+#### Required Host Permissions
+The Docker container runs as user ID 1000 for security. You **must** set proper permissions on the host directory that will store received images:
+
+```bash
+# Navigate to the docker directory
+cd /path/to/xrit-rx-docker/docker
+
+# Create the received directory
+mkdir -p received
+
+# Set ownership to UID 1000 (container user)
+sudo chown -R 1000:1000 received
+
+# Set proper permissions
+chmod -R 755 received
+```
+
+**Alternative for Windows/WSL2:**
+```bash
+# In WSL2 terminal
+cd /mnt/c/path/to/xrit-rx-docker/docker
+mkdir -p received
+sudo chown -R 1000:1000 received
+chmod -R 755 received
+```
+
+After setting permissions, start the container:
+```bash
+docker-compose up -d
+```
+
+The dashboard will be available at `http://localhost:1692`
+
 ### Configuring xrit-rx
 All user-configurable options are found in the [`xrit-rx.ini`](src/xrit-rx.ini) file. The default configuration will work for most situations.
 
@@ -100,8 +142,48 @@ This version includes several enhancements to improve the real-time monitoring e
 - **Timeout Handling**: Automatic completion of downloads that stall or miss segments, ensuring reliable operation
 - **Improved API Documentation**: Comprehensive API documentation page with optimized loading performance
 - **Enhanced Error Handling**: Robust connection error handling to prevent dashboard crashes during network issues
+- **Timelapse Generator**: Create MP4 videos and GIFs from received satellite images
 
 The dashboard automatically polls for progress updates and refreshes partial images in real-time, providing immediate feedback on satellite data reception status.
+
+### Timelapse Feature
+The enhanced version includes automated timelapse generation using FFmpeg to create videos and GIFs from received satellite imagery.
+
+**Available Formats:**
+- **MP4 Videos**: High-quality H.264 encoded videos (smaller file size)
+- **GIF Animations**: Optimized animated GIFs with palette optimization (larger file size, better compatibility)
+
+**Time Ranges:**
+- **24 Hours**: Full day timelapse showing weather patterns and cloud movement
+- **3 Hours**: Recent activity timelapse for quick updates
+
+**Manual Creation:**
+```bash
+# Create 24-hour MP4 timelapse
+python3 tools/timelapse.py --hours 24 --type FD --format mp4
+
+# Create 3-hour GIF timelapse  
+python3 tools/timelapse.py --hours 3 --type FD --format gif
+
+# Batch create all timelapses
+./tools/create_timelapses.sh
+```
+
+**Automated Creation:**
+Add to crontab for automatic timelapse generation:
+```bash
+# Create timelapses every 6 hours
+0 */6 * * * /path/to/xrit-rx/tools/create_timelapses.sh
+
+# Create timelapses daily at midnight
+0 0 * * * /path/to/xrit-rx/tools/create_timelapses.sh
+```
+
+**Dashboard Integration:**
+The dashboard includes buttons for manual timelapse creation. Generated files are saved to `received/timelapses/` and can be downloaded directly through the web interface.
+
+**Docker Usage:**
+When using Docker, timelapses are automatically saved to the mounted `received` volume and accessible from the host system.
 
 
 ## HTTP API

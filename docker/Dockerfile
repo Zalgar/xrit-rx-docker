@@ -34,7 +34,7 @@ RUN mkdir -p /tmp && \
     rm -rf /tmp/COMS_Decryption_Sample_Cpp*
 
 # Final runtime image
-FROM python:3.12-alpine
+FROM python:3.13-alpine
 
 # Install only runtime dependencies (Alpine packages)
 RUN apk add --no-cache \
@@ -44,6 +44,7 @@ RUN apk add --no-cache \
     gcc \
     musl-dev \
     g++ \
+    ffmpeg \
     && apk del gcc musl-dev g++
 
 # Copy built application from builder stage
@@ -63,7 +64,9 @@ RUN python3 tools/keymsg-decrypt.py EncryptionKeyMessage_001F2904C905.bin 001F29
 COPY docker/entry.sh /xrit-rx/entry.sh
 RUN apk add --no-cache dos2unix \
     && dos2unix /xrit-rx/entry.sh \
-    && chmod +x /xrit-rx/entry.sh
+    && chmod +x /xrit-rx/entry.sh \
+    && chmod +x /xrit-rx/tools/timelapse.py \
+    && chmod +x /xrit-rx/tools/timelapse_service.py
 
 # Create non-root user and setup permissions
 RUN adduser -D -u 1000 xrituser && \

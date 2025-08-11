@@ -335,3 +335,38 @@ a {
         font-family: 'Courier New', monospace;
     }
 }
+
+/* Timelapse Generator Styles */
+#block-timelapse {
+    width: 320px;
+    text-align: left;
+}
+
+.timelapse-btn {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    margin: 4px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: background 0.3s ease;
+
+    &:hover {
+        background: linear-gradient(135deg, #45a049, #3d8b40);
+    }
+
+    &:active {
+        background: linear-gradient(135deg, #3d8b40, #357a35);
+    }
+
+    &:disabled {
+        background: #666;
+        cursor: not-allowed;
+    }
+}

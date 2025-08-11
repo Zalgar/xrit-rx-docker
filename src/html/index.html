@@ -50,6 +50,18 @@
                     <div id="progress-list"></div>
                 </div>
             </div>
+
+            <div class="block" id="block-timelapse">
+                <div class="block-heading">Timelapse Generator</div>
+                <div class="block-body">
+                    <p>Automated timelapse videos from received images</p>
+                    <div style="margin: 10px 0;">
+                        <button onclick="refreshTimelapses()" class="timelapse-btn">🔄 Refresh</button>
+                        <button onclick="createTimelapse(24, 'FD', 'mp4')" class="timelapse-btn">ℹ️ Info</button>
+                    </div>
+                    <div id="timelapse-status" style="margin-top: 10px; color: #CCC;">Loading timelapses...</div>
+                </div>
+            </div>
         </div>
 
         <!-- JavaScript -->

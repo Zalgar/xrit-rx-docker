@@ -14,6 +14,7 @@ import json
 import mimetypes
 import os
 import socketserver
+import subprocess
 from threading import Thread
 import time
 
@@ -207,6 +208,54 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     'get_current_vcid': '/api/current/vcid'
                 }
             }
+        
+        elif path[0] == "timelapse":                           # Timelapse creation endpoints
+            if len(path) == 2 and path[1] == "create":
+                # /api/timelapse/create?hours=24&type=FD&format=mp4
+                query_params = self.parse_query_params()
+                
+                hours = int(query_params.get('hours', ['24'])[0])
+                image_type = query_params.get('type', ['FD'])[0].upper()
+                format_type = query_params.get('format', ['mp4'])[0].lower()
+                
+                if format_type not in ['mp4', 'gif']:
+                    status = 400
+                    content = {'error': 'Format must be mp4 or gif'}
+                elif hours not in [3, 24]:
+                    status = 400
+                    content = {'error': 'Hours must be 3 or 24'}
+                else:
+                    # Create timelapse asynchronously
+                    success = self.create_timelapse_async(hours, image_type, format_type)
+                    if success:
+                        content = {
+                            'status': 'started',
+                            'message': f'Timelapse creation started for {hours}h of {image_type} images in {format_type} format',
+                            'estimated_time': '30-60 seconds'
+                        }
+                    else:
+                        status = 500
+                        content = {'error': 'Failed to start timelapse creation'}
+            
+            elif len(path) == 2 and path[1] == "list":
+                # /api/timelapse/list - list available timelapses
+                content = self.list_timelapses()
+            
+            elif len(path) >= 2 and path[1] == "download":
+                # /api/timelapse/download/{filename} - download timelapse file
+                if len(path) >= 3:
+                    filename = "/".join(path[2:])
+                    timelapse_path = os.path.join(dash_config.output, "timelapses", filename)
+                    
+                    if os.path.isfile(timelapse_path) and self.is_safe_path(timelapse_path):
+                        mime = mimetypes.guess_type(timelapse_path)[0] or 'application/octet-stream'
+                        content = open(timelapse_path, 'rb').read()
+                    else:
+                        status = 404
+                        content = {'error': 'Timelapse file not found'}
+                else:
+                    status = 400
+                    content = {'error': 'Filename required'}
         
         elif "/".join(path).startswith(dash_config.output):     # Endpoint starts with demuxer output root path
             path = "/".join(path)

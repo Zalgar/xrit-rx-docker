@@ -17,6 +17,8 @@ from configparser import ConfigParser, NoOptionError, NoSectionError
 from os import mkdir, path
 import socket
 from time import time, sleep
+import subprocess
+from threading import Thread
 
 from demuxer import Demuxer
 import ccsds as CCSDS
@@ -41,10 +43,36 @@ sck = None              # TCP/UDP socket object
 buflen = 892            # Input buffer length (1 VCDU)
 demux = None            # Demuxer class object
 dash = None             # Dashboard class object
+timelapse_process = None  # Timelapse service process
 dashe = None            # Dashboard enabled flag
 dashp = None            # Dashboard HTTP port
 dashi = None            # Dashboard refresh interval (sec)
 ver = "2.0.0"           # xrit-rx version
+
+
+def start_timelapse_service():
+    """
+    Start the timelapse background service as a separate process
+    """
+    global timelapse_process
+    
+    try:
+        timelapse_script = path.join(path.dirname(__file__), "tools", "timelapse_service.py")
+        
+        if not path.exists(timelapse_script):
+            print(Fore.YELLOW + Style.BRIGHT + "TIMELAPSE SERVICE SCRIPT NOT FOUND - SKIPPING")
+            return
+            
+        # Start timelapse service as background process
+        timelapse_process = subprocess.Popen([
+            "python3", timelapse_script,
+            "--received", output
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        print(Fore.GREEN + Style.BRIGHT + f"TIMELAPSE SERVICE STARTED (PID: {timelapse_process.pid})")
+        
+    except Exception as e:
+        print(Fore.YELLOW + Style.BRIGHT + f"TIMELAPSE SERVICE FAILED TO START: {e}")
 
 
 def init():
@@ -111,6 +139,9 @@ def init():
             ),
             demux
         )
+
+    # Start timelapse background service
+    start_timelapse_service()
 
     # Check demuxer thread is ready
     if not demux.coreReady:
@@ -501,11 +532,18 @@ def safe_stop(message=True):
     """
     Safely kill threads and exit
     """
+    global timelapse_process
 
     if demux is not None:
         demux.stop()
     if dash is not None:
         dash.stop()
+    if timelapse_process is not None:
+        try:
+            timelapse_process.terminate()
+            timelapse_process.wait(timeout=5)
+        except:
+            timelapse_process.kill()
 
     if message:
         print("\nExiting...")
