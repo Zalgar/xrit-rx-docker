@@ -66,15 +66,38 @@ def start_timelapse_service():
         # Create log file for timelapse service debugging
         log_file = path.join(output, "timelapse_service.log")
         
+        # Ensure the output directory exists and is writable
+        if not path.exists(output):
+            mkdir(output)
+        
+        # Test if we can write to the log file
+        try:
+            with open(log_file, 'w') as test_log:
+                test_log.write(f"Timelapse service starting at {time()}\n")
+        except PermissionError:
+            print(Fore.YELLOW + Style.BRIGHT + f"PERMISSION DENIED for log file: {log_file}")
+            print(Fore.YELLOW + Style.BRIGHT + "Running timelapse service without file logging")
+            log_file = None
+        
         # Start timelapse service as background process with logging
-        with open(log_file, 'w') as log:
+        if log_file:
+            with open(log_file, 'a') as log:  # Use append mode
+                timelapse_process = subprocess.Popen([
+                    "python3", timelapse_script,
+                    "--received", output
+                ], stdout=log, stderr=subprocess.STDOUT)
+        else:
+            # Run without file logging if permissions don't allow it
             timelapse_process = subprocess.Popen([
                 "python3", timelapse_script,
                 "--received", output
-            ], stdout=log, stderr=subprocess.STDOUT)
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         print(Fore.GREEN + Style.BRIGHT + f"TIMELAPSE SERVICE STARTED (PID: {timelapse_process.pid})")
-        print(Fore.GREEN + Style.BRIGHT + f"TIMELAPSE LOG: {log_file}")
+        if log_file:
+            print(Fore.GREEN + Style.BRIGHT + f"TIMELAPSE LOG: {log_file}")
+        else:
+            print(Fore.YELLOW + Style.BRIGHT + "TIMELAPSE LOG: Console output disabled due to permissions")
         
     except Exception as e:
         print(Fore.YELLOW + Style.BRIGHT + f"TIMELAPSE SERVICE FAILED TO START: {e}")

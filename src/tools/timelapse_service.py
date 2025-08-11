@@ -48,9 +48,20 @@ class TimelapseService:
         # Ensure output directory exists
         try:
             os.makedirs(self.output_dir, exist_ok=True)
-            self.logger.info(f"✓ Timelapses directory created/verified: {self.output_dir}")
+            
+            # Test if we can write to the directory
+            test_file = os.path.join(self.output_dir, ".write_test")
+            try:
+                with open(test_file, 'w') as f:
+                    f.write("test")
+                os.remove(test_file)
+                self.logger.info(f"✓ Timelapses directory created/verified with write access: {self.output_dir}")
+            except PermissionError:
+                self.logger.error(f"✗ No write permission to timelapses directory: {self.output_dir}")
+                raise PermissionError(f"Cannot write to timelapses directory: {self.output_dir}")
+                
         except Exception as e:
-            self.logger.error(f"✗ Failed to create timelapses directory: {e}")
+            self.logger.error(f"✗ Failed to create/access timelapses directory: {e}")
             raise
         
         # Track last generation times

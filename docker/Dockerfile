@@ -72,8 +72,10 @@ RUN apk add --no-cache dos2unix \
 RUN adduser -D -u 1000 xrituser && \
     mkdir -p /xrit-rx/received/LRIT && \
     mkdir -p /xrit-rx/received/HRIT && \
+    mkdir -p /xrit-rx/received/timelapses && \
     chown -R xrituser:xrituser /xrit-rx && \
-    chmod -R 755 /xrit-rx/received
+    chmod -R 755 /xrit-rx/received && \
+    chmod -R 775 /xrit-rx/received/timelapses
 USER xrituser
 
 # Expose port
