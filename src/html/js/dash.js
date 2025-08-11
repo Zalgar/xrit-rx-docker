@@ -73,6 +73,9 @@ function init()
                 // Load available timelapses
                 loadTimelapses();
                 
+                // Load latest 3hr timelapse
+                loadLatestTimelapse();
+                
                 print("Ready", "DASH");
             })
         }
@@ -523,28 +526,58 @@ function block_progress(element)
  * Load available pre-rendered timelapses
  */
 function loadTimelapses() {
-    // Simple approach: serve static files
-    // The background service creates files like latest_3h_mp4.mp4, latest_24h_gif.gif
+    // Use the existing file serving mechanism instead of custom API endpoints
     const timelapseFiles = [
-        { name: '3h MP4', file: 'latest_3h_mp4.mp4', hours: 3, format: 'MP4' },
-        { name: '24h MP4', file: 'latest_24h_mp4.mp4', hours: 24, format: 'MP4' },
-        { name: '3h GIF', file: 'latest_3h_gif.gif', hours: 3, format: 'GIF' },
-        { name: '24h GIF', file: 'latest_24h_gif.gif', hours: 24, format: 'GIF' }
+        { name: '3h MP4', api: '/api/received/timelapses/latest_3h_mp4.mp4', hours: 3, format: 'MP4' },
+        { name: '24h MP4', api: '/api/received/timelapses/latest_24h_mp4.mp4', hours: 24, format: 'MP4' },
+        { name: '3h GIF', api: '/api/received/timelapses/latest_3h_gif.gif', hours: 3, format: 'GIF' },
+        { name: '24h GIF', api: '/api/received/timelapses/latest_24h_gif.gif', hours: 24, format: 'GIF' }
     ];
     
     const statusElement = document.getElementById('timelapse-status');
-    let statusHTML = '<div style="font-size: 12px; margin-top: 5px;">Available Downloads:</div>';
+    let statusHTML = '<div style="font-size: 12px; margin-bottom: 8px; color: #4CAF50;">📽️ Available Downloads:</div>';
+    let availableCount = 0;
+    let processedCount = 0;
     
-    timelapses.forEach(tl => {
-        const downloadUrl = `/api/received/timelapses/${tl.file}`;
-        statusHTML += `<div style="margin: 2px 0;">`;
-        statusHTML += `<a href="${downloadUrl}" download style="color: #4CAF50; text-decoration: none; font-size: 11px;">`;
-        statusHTML += `📥 ${tl.name}</a> `;
-        statusHTML += `<span style="color: #888; font-size: 10px;" onclick="checkFileAge('${tl.file}')" style="cursor: pointer;">ℹ️</span>`;
-        statusHTML += `</div>`;
+    // Check each timelapse file availability
+    timelapseFiles.forEach((tl) => {
+        fetch(tl.api, { method: 'HEAD' })
+            .then(response => {
+                if (response.ok) {
+                    availableCount++;
+                    statusHTML += `<div style="margin: 3px 0; padding: 2px 5px; background: rgba(76, 175, 80, 0.1); border-radius: 3px;">`;
+                    statusHTML += `<a href="${tl.api}" download style="color: #4CAF50; text-decoration: none; font-size: 11px;">`;
+                    statusHTML += `📥 ${tl.name}</a> `;
+                    statusHTML += `<span style="color: #888; font-size: 9px; margin-left: 5px;">✓ Ready</span>`;
+                    statusHTML += `</div>`;
+                } else {
+                    statusHTML += `<div style="margin: 3px 0; padding: 2px 5px; background: rgba(128, 128, 128, 0.1); border-radius: 3px;">`;
+                    statusHTML += `<span style="color: #888; text-decoration: none; font-size: 11px;">`;
+                    statusHTML += `⏳ ${tl.name}</span> `;
+                    statusHTML += `<span style="color: #666; font-size: 9px; margin-left: 5px;">Generating...</span>`;
+                    statusHTML += `</div>`;
+                }
+                
+                processedCount++;
+                // Update status after checking all files
+                if (processedCount === timelapseFiles.length) {
+                    if (availableCount === 0) {
+                        statusHTML = '<div style="color: #888; font-size: 11px;">⏳ Timelapses are being generated...</div>' +
+                                   '<div style="color: #666; font-size: 10px; margin-top: 5px;">Check back in a few minutes</div>';
+                    }
+                    statusElement.innerHTML = statusHTML;
+                }
+            })
+            .catch(error => {
+                console.error(`Error checking ${tl.name}:`, error);
+                statusHTML += `<div style="margin: 3px 0; color: #f44336; font-size: 11px;">❌ ${tl.name} - Error</div>`;
+                
+                processedCount++;
+                if (processedCount === timelapseFiles.length) {
+                    statusElement.innerHTML = statusHTML;
+                }
+            });
     });
-    
-    statusElement.innerHTML = statusHTML;
 }
 
 /**
@@ -562,9 +595,10 @@ function refreshTimelapses() {
     const statusElement = document.getElementById('timelapse-status');
     statusElement.innerHTML = '<span style="color: #FFA500;">Refreshing...</span>';
     
-    // Simply reload the static list
+    // Reload both the list and latest timelapse
     setTimeout(() => {
         loadTimelapses();
+        loadLatestTimelapse();
     }, 1000);
 }
 
@@ -581,4 +615,61 @@ function createTimelapse(hours, type, format) {
     setTimeout(() => {
         loadTimelapses();
     }, 3000);
+}
+
+/**
+ * Load latest 3hr timelapse for display
+ */
+function loadLatestTimelapse() {
+    const statusElement = document.getElementById('latest-timelapse-status');
+    const videoElement = document.getElementById('latest-timelapse-video');
+    
+    // Try to load 3hr MP4 timelapse using existing file serving mechanism
+    const timelapseUrl = '/api/received/timelapses/latest_3h_mp4.mp4';
+    
+    // Test if the file exists
+    fetch(timelapseUrl, { method: 'HEAD' })
+        .then(response => {
+            if (response.ok) {
+                statusElement.style.display = 'none';
+                videoElement.src = timelapseUrl;
+                videoElement.style.display = 'block';
+                videoElement.title = 'Latest 3-hour timelapse (MP4)';
+            } else {
+                statusElement.textContent = 'No 3hr timelapse available yet';
+                statusElement.style.color = '#888';
+                videoElement.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading latest timelapse:', error);
+            statusElement.textContent = 'Error loading timelapse';
+            statusElement.style.color = '#f44336';
+            videoElement.style.display = 'none';
+        });
+}
+
+/**
+ * Show timelapse information
+ */
+function showTimelapseInfo() {
+    const statusElement = document.getElementById('timelapse-status');
+    statusElement.innerHTML = `
+        <div style="color: #4CAF50; font-size: 12px; margin-bottom: 5px;">📊 Timelapse Information</div>
+        <div style="font-size: 11px; color: #CCC; line-height: 1.4;">
+            • Generated automatically every 30 minutes<br>
+            • 3-hour timelapses: ~18 images from last 3 hours<br>
+            • 24-hour timelapses: ~144 images from last 24 hours<br>
+            • Available in MP4 (video) and GIF (animated) formats<br>
+            • GK-2A satellite transmits every 10 minutes<br>
+        </div>
+        <div style="margin-top: 8px; font-size: 10px; color: #888;">
+            API: /api/timelapse/fd/{duration}/{type}
+        </div>
+    `;
+    
+    // Refresh the list after showing info
+    setTimeout(() => {
+        loadTimelapses();
+    }, 5000);
 }

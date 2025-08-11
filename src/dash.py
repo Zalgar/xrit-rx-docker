@@ -137,6 +137,48 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
     
 
+    def do_HEAD(self):
+        """
+        Respond to HEAD requests (same as GET but without body)
+        """
+        
+        # Respond with index.html content on root path requests
+        if self.path == "/": self.path = "index.html"
+        
+        try:
+            if self.path.startswith("/api/") or self.path == "/api":    # API endpoint requests
+                content, status, mime = self.handle_api(self.path)
+
+                self.send_response(status)
+                self.send_header('Content-type', mime)
+                self.send_header('Content-Length', str(len(content) if isinstance(content, bytes) else len(str(content).encode('utf-8'))))
+                self.end_headers()
+                # Don't send body for HEAD requests
+            else:                                                       # Local file requests
+                self.path = "html/{}".format(self.path)
+
+                if os.path.isfile(self.path):                           # Requested file exists (HTTP 200)
+                    self.send_response(200)
+                    mime = mimetypes.guess_type(self.path)[0]
+                    self.send_header('Content-type', mime)
+                    
+                    # Get file size for Content-Length header
+                    file_size = os.path.getsize(self.path)
+                    self.send_header('Content-Length', str(file_size))
+                    self.end_headers()
+                    # Don't send body for HEAD requests
+                else:                                                   # Requested file not found (HTTP 404)
+                    self.send_response(404)
+                    self.end_headers()
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            # Client disconnected, nothing we can do
+            return
+        except Exception as e:
+            # Log other exceptions but don't crash
+            print(f"HTTP HEAD Server Error: {e}")
+            return
+
+
     def handle_api(self, path):
         """
         Handle API endpoint request
@@ -347,6 +389,64 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Return response bytes, HTTP status code and content MIME type
         return content, status, mime
 
+
+    def create_timelapse_async(self, hours, image_type, format_type):
+        """
+        Start timelapse creation asynchronously
+        """
+        try:
+            import subprocess
+            import os
+            
+            # Path to timelapse script
+            script_path = os.path.join(os.path.dirname(__file__), "tools", "timelapse.py")
+            
+            # Build command
+            cmd = [
+                "python", script_path,
+                "--hours", str(hours),
+                "--type", image_type,
+                "--format", format_type,
+                "--output", os.path.join(dash_config.output, "timelapses")
+            ]
+            
+            # Start process in background
+            subprocess.Popen(cmd, cwd=os.path.dirname(__file__))
+            return True
+        except Exception as e:
+            print(f"Error starting timelapse creation: {e}")
+            return False
+
+    def list_timelapses(self):
+        """
+        List available timelapse files
+        """
+        timelapses_dir = os.path.join(dash_config.output, "timelapses")
+        if not os.path.exists(timelapses_dir):
+            return {'timelapses': []}
+        
+        timelapses = []
+        for filename in os.listdir(timelapses_dir):
+            if filename.endswith(('.mp4', '.gif')):
+                filepath = os.path.join(timelapses_dir, filename)
+                stat = os.stat(filepath)
+                timelapses.append({
+                    'filename': filename,
+                    'size': stat.st_size,
+                    'created': stat.st_mtime,
+                    'url': f'/api/timelapse/download/{filename}'
+                })
+        
+        return {'timelapses': sorted(timelapses, key=lambda x: x['created'], reverse=True)}
+
+    def is_safe_path(self, path):
+        """
+        Check if path is safe (within output directory)
+        """
+        try:
+            return os.path.commonpath([dash_config.output, path]) == dash_config.output
+        except ValueError:
+            return False
 
     def log_message(self, format, *args):
         """

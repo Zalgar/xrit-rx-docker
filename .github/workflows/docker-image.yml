@@ -103,6 +103,8 @@ jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
+    # Only run Docker build on releases or manual workflow dispatch
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -119,6 +121,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
     
+      - name: Determine Docker tags
+        id: docker_tags
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tags=zalgar/xrit-rx-docker:latest,zalgar/xrit-rx-docker:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tags=zalgar/xrit-rx-docker:latest" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -126,4 +137,4 @@ jobs:
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: zalgar/xrit-rx-docker:latest
+          tags: ${{ steps.docker_tags.outputs.tags }}

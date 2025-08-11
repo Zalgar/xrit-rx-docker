@@ -43,6 +43,18 @@
                 </div>
             </div>
 
+            <div class="block" id="block-latest-timelapse" style="background: black;">
+                <div class="block-heading">Latest Timelapse (3hr)</div>
+                <div class="block-body">
+                    <div id="latest-timelapse-container" style="text-align: center;">
+                        <p id="latest-timelapse-status" style="color: #888;">Loading latest timelapse...</p>
+                        <video id="latest-timelapse-video" controls autoplay loop muted style="max-width: 100%; max-height: 300px; display: none;">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+            </div>
+
             <div class="block" id="block-progress">
                 <div class="block-heading">Download Progress</div>
                 <div class="block-body">
@@ -52,12 +64,12 @@
             </div>
 
             <div class="block" id="block-timelapse">
-                <div class="block-heading">Timelapse Generator</div>
+                <div class="block-heading">Available Timelapses</div>
                 <div class="block-body">
-                    <p>Automated timelapse videos from received images</p>
+                    <p>Automated timelapse videos generated every 30 minutes</p>
                     <div style="margin: 10px 0;">
                         <button onclick="refreshTimelapses()" class="timelapse-btn">🔄 Refresh</button>
-                        <button onclick="createTimelapse(24, 'FD', 'mp4')" class="timelapse-btn">ℹ️ Info</button>
+                        <button onclick="showTimelapseInfo()" class="timelapse-btn">ℹ️ Info</button>
                     </div>
                     <div id="timelapse-status" style="margin-top: 10px; color: #CCC;">Loading timelapses...</div>
                 </div>

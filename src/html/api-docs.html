@@ -106,6 +106,63 @@
                         <p>Returns metadata for the most recent xRIT file processed, including file path and processing information.</p>
                     </div>
 
+                    <h4>Timelapse APIs</h4>
+                    <p>Automated timelapse generation and access APIs. Timelapses are generated automatically every 30 minutes using the latest received images.</p>
+                    
+                    <div class="api-endpoint">
+                        <code>GET /api/received/timelapses/{filename}</code>
+                        <p><strong>Direct Timelapse Access:</strong> Download timelapse videos using the standard file serving mechanism.</p>
+                        <ul>
+                            <li><strong>latest_3h_mp4.mp4</strong>: 3-hour MP4 timelapse</li>
+                            <li><strong>latest_24h_mp4.mp4</strong>: 24-hour MP4 timelapse</li>
+                            <li><strong>latest_3h_gif.gif</strong>: 3-hour GIF timelapse</li>
+                            <li><strong>latest_24h_gif.gif</strong>: 24-hour GIF timelapse</li>
+                        </ul>
+                        <small>Example: <code>/api/received/timelapses/latest_3h_mp4.mp4</code></small>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>GET /api/timelapse/list</code>
+                        <p>Returns JSON list of all available timelapse files with metadata including file size, creation time, and download URLs.</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>GET /api/timelapse/create</code>
+                        <p><strong>Manual Timelapse Creation:</strong> Trigger custom timelapse generation (background process).</p>
+                        <p><strong>Query Parameters:</strong></p>
+                        <ul>
+                            <li><strong>hours</strong>: Duration in hours (3 or 24)</li>
+                            <li><strong>type</strong>: Image type (usually "FD" for Full Disk)</li>
+                            <li><strong>format</strong>: Output format ("mp4" or "gif")</li>
+                        </ul>
+                        <small>Example: <code>/api/timelapse/create?hours=24&type=FD&format=mp4</code></small>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>GET /api/timelapse/download/{filename}</code>
+                        <p>Download specific timelapse file by exact filename from the timelapses directory.</p>
+                        <small>Use with filename from <code>/api/timelapse/list</code> response</small>
+                    </div>
+
+                    <h4>Timelapse Specifications</h4>
+                    <div class="image-types">
+                        <div class="image-type"><strong>3-Hour Timelapses:</strong> ~18 images (GK-2A transmits every 10 minutes)</div>
+                        <div class="image-type"><strong>24-Hour Timelapses:</strong> ~144 images (6 per hour × 24 hours)</div>
+                        <div class="image-type"><strong>MP4 Format:</strong> H.264 codec, 5fps, optimized for web playback</div>
+                        <div class="image-type"><strong>GIF Format:</strong> Palette-optimized, 5fps, web-compatible animated GIF</div>
+                        <div class="image-type"><strong>Resolution:</strong> 640px width (maintains aspect ratio)</div>
+                        <div class="image-type"><strong>Generation:</strong> Automated every 30 minutes via background service</div>
+                    </div>
+
+                    <h4>Timelapse API Requirements</h4>
+                    <ul>
+                        <li><strong>FFmpeg:</strong> Required for video generation (included in Docker image)</li>
+                        <li><strong>Image Directory:</strong> Must have received FD images in chronological order</li>
+                        <li><strong>Background Service:</strong> Timelapse service must be running for automated generation</li>
+                        <li><strong>Disk Space:</strong> Allow ~50-100MB per timelapse file depending on format and duration</li>
+                        <li><strong>Processing Time:</strong> 30-60 seconds for generation depending on image count and format</li>
+                    </ul>
+
                     <h4>Supported Image Types</h4>
                     <p>GK-2A LRIT data stream image types:</p>
                     <div class="image-types">
@@ -140,6 +197,8 @@
                     </ul>
 
                     <h4>Example Usage</h4>
+                    
+                    <h5>Basic API Calls</h5>
                     <div class="api-endpoint">
                         <code>curl http://localhost:1692/api</code>
                         <p>Get system configuration and status information</p>
@@ -160,6 +219,7 @@
                         <p>Download partial/preview image of currently downloading Full Disk image</p>
                     </div>
 
+                    <h5>Progress Monitoring</h5>
                     <div class="api-endpoint">
                         <code>curl http://localhost:1692/api/current/progress</code>
                         <p>Get real-time download progress for active multi-segment products</p>
@@ -170,12 +230,65 @@
                         <p>Check which Virtual Channel ID is currently being processed</p>
                     </div>
 
+                    <h5>Timelapse Operations</h5>
+                    <div class="api-endpoint">
+                        <code>curl http://localhost:1692/api/received/timelapses/latest_3h_mp4.mp4 --output timelapse_3h.mp4</code>
+                        <p>Download the latest 3-hour MP4 timelapse</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>curl http://localhost:1692/api/received/timelapses/latest_24h_gif.gif --output timelapse_24h.gif</code>
+                        <p>Download the latest 24-hour GIF timelapse</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>curl http://localhost:1692/api/timelapse/list</code>
+                        <p>List all available timelapse files with metadata</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>curl -X GET "http://localhost:1692/api/timelapse/create?hours=24&type=FD&format=mp4"</code>
+                        <p>Trigger creation of a custom 24-hour MP4 timelapse (asynchronous)</p>
+                    </div>
+
                     <h4>HTTP Status Codes</h4>
                     <ul>
                         <li><strong>200 OK</strong> - Request successful, data returned</li>
-                        <li><strong>404 Not Found</strong> - Resource not available or doesn't exist</li>
+                        <li><strong>400 Bad Request</strong> - Invalid parameters (e.g., wrong duration or format for timelapse)</li>
+                        <li><strong>404 Not Found</strong> - Resource not available or doesn't exist (image/timelapse not ready)</li>
                         <li><strong>500 Internal Server Error</strong> - Server error occurred during processing</li>
                     </ul>
+
+                    <h4>Timelapse Response Examples</h4>
+                    <div class="api-endpoint">
+                        <strong>Success Response (timelapse/create):</strong>
+                        <pre><code>{
+  "status": "started",
+  "message": "Timelapse creation started for 3h of FD images in mp4 format",
+  "estimated_time": "30-60 seconds"
+}</code></pre>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <strong>Error Response (invalid parameters):</strong>
+                        <pre><code>{
+  "error": "Duration must be 3h or 24h"
+}</code></pre>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <strong>List Response (timelapse/list):</strong>
+                        <pre><code>{
+  "timelapses": [
+    {
+      "filename": "latest_3h_mp4.mp4",
+      "size": 2547832,
+      "created": 1723362000,
+      "url": "/api/timelapse/download/latest_3h_mp4.mp4"
+    }
+  ]
+}</code></pre>
+                    </div>
 
                     <h4>CORS and Cross-Domain Access</h4>
                     <p>CORS enabled for cross-domain API access and external monitoring dashboards.</p>
@@ -189,9 +302,21 @@
                     </ul>
 
                     <h4>Integration Notes</h4>
-                    <p><strong>Dashboard:</strong> Web UI uses these APIs for real-time monitoring.<br>
-                    <strong>External Apps:</strong> Build custom monitoring solutions.<br>
-                    <strong>Automation:</strong> Automated download monitoring and alerting.</p>
+                    <p><strong>Dashboard:</strong> Web UI uses these APIs for real-time monitoring and timelapse display.<br>
+                    <strong>External Apps:</strong> Build custom monitoring solutions and timelapse galleries.<br>
+                    <strong>Automation:</strong> Automated download monitoring, alerting, and timelapse archiving.<br>
+                    <strong>Timelapse Automation:</strong> Background service generates timelapses automatically - no manual intervention required.<br>
+                    <strong>Media Integration:</strong> Direct API access allows embedding timelapses in external websites and applications.</p>
+
+                    <h4>Timelapse Technical Details</h4>
+                    <ul>
+                        <li><strong>File Naming:</strong> Standardized naming: <code>latest_{duration}_{format}.{ext}</code></li>
+                        <li><strong>Overwrite Behavior:</strong> New timelapses replace previous ones with same parameters</li>
+                        <li><strong>Concurrent Generation:</strong> Multiple timelapses can be generated simultaneously</li>
+                        <li><strong>Error Handling:</strong> Failed generations logged, service continues with next scheduled run</li>
+                        <li><strong>Performance:</strong> Symlink-based temporary file management for efficiency</li>
+                        <li><strong>Quality:</strong> Two-pass GIF generation with optimized palette for best quality</li>
+                    </ul>
                 </div>
             </div>
         </div>

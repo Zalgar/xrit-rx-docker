@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-GK-2A LRIT Timelapse Generator
-Creates timelapse videos and GIFs from received satellite images
-
-Original work by sam210723 (https://github.com/sam210723/xrit-rx)
-Enhanced version by Zalgar (https://github.com/Zalgar/xrit-rx-docker)
-"""
 
 import os
 import sys
@@ -33,6 +26,56 @@ def find_images(received_path, hours_back=24, image_type="FD"):
     
     image_files = []
     
+    print(f"Looking for {image_type} images from the last {hours_back} hours (since {cutoff_time.strftime('%Y-%m-%d %H:%M')})...")
+    
+    # First pass: look for images in the specified timeframe
+    image_files = _search_images_in_timeframe(received_path, cutoff_time, now, image_type)
+    
+    print(f"Found {len(image_files)} images in primary search")
+    
+    # If we don't have enough images (less than 5), expand search to include yesterday
+    if len(image_files) < 5:
+        print(f"Not enough images found, expanding search to include yesterday...")
+        
+        # Search the previous 24 hours before our cutoff
+        extended_cutoff = cutoff_time - datetime.timedelta(hours=24)
+        yesterday_images = _search_images_in_timeframe(received_path, extended_cutoff, cutoff_time, image_type)
+        
+        print(f"Found {len(yesterday_images)} additional images from yesterday")
+        
+        # Combine all images and remove duplicates
+        all_images = list(set(image_files + yesterday_images))
+        
+        # Sort by timestamp
+        def get_timestamp(filepath):
+            try:
+                filename = os.path.basename(filepath)
+                parts = filename.split('_')
+                if len(parts) >= 6:
+                    date_part = parts[4]  # 20250810
+                    time_part = parts[5].split('.')[0]  # 075006
+                    return datetime.datetime.strptime(f"{date_part}_{time_part}", "%Y%m%d_%H%M%S")
+            except:
+                pass
+            return datetime.datetime.min
+        
+        all_images.sort(key=get_timestamp)
+        
+        # Take the most recent images (up to 2 per hour requested)
+        max_images = min(len(all_images), hours_back * 2)
+        image_files = all_images[-max_images:] if all_images else []
+        
+        print(f"Final selection: {len(image_files)} images")
+    
+    return image_files
+
+
+def _search_images_in_timeframe(received_path, start_time, end_time, image_type):
+    """
+    Search for images within a specific timeframe
+    """
+    image_files = []
+    
     # Search through date directories
     for date_dir in glob.glob(os.path.join(received_path, "LRIT", "*")):
         if not os.path.isdir(date_dir):
@@ -42,8 +85,8 @@ def find_images(received_path, hours_back=24, image_type="FD"):
         try:
             date_obj = datetime.datetime.strptime(date_str, "%Y%m%d")
             
-            # Skip directories older than our cutoff
-            if date_obj.date() < cutoff_time.date():
+            # Skip directories outside our timeframe
+            if date_obj.date() < start_time.date() or date_obj.date() > end_time.date():
                 continue
                 
             # Look for images in the specified type directory
@@ -65,7 +108,8 @@ def find_images(received_path, hours_back=24, image_type="FD"):
                             timestamp_str = f"{date_part}_{time_part}"
                             file_time = datetime.datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
                             
-                            if file_time >= cutoff_time:
+                            # Check if within timeframe
+                            if start_time <= file_time <= end_time:
                                 image_files.append((file_time, file_path))
                     except (ValueError, IndexError):
                         continue
@@ -101,37 +145,77 @@ def create_timelapse(image_files, output_path, format_type="mp4", framerate=10):
     temp_dir = "/tmp/timelapse"
     os.makedirs(temp_dir, exist_ok=True)
     
+    print(f"Preparing {len(image_files)} images in {temp_dir}...")
+    
     # Create symlinks with sequential names for FFmpeg
     for i, image_file in enumerate(image_files):
         symlink_path = os.path.join(temp_dir, f"frame_{i:06d}.jpg")
+        
+        # Convert relative path to absolute path
+        abs_image_path = os.path.abspath(image_file)
+        
+        # Remove existing symlink if present
         if os.path.exists(symlink_path):
             os.unlink(symlink_path)
-        os.symlink(image_file, symlink_path)
+            
+        # Verify source image exists
+        if not os.path.exists(abs_image_path):
+            print(f"Warning: Source image not found: {abs_image_path}")
+            continue
+            
+        try:
+            os.symlink(abs_image_path, symlink_path)
+            print(f"Created symlink {i+1}/{len(image_files)}: {symlink_path} -> {abs_image_path}")
+        except OSError as e:
+            print(f"Failed to create symlink for {abs_image_path}: {e}")
+            # Fallback: copy the file instead of symlinking
+            import shutil
+            try:
+                shutil.copy2(abs_image_path, symlink_path)
+                print(f"Copied file instead: {symlink_path}")
+            except Exception as copy_e:
+                print(f"Failed to copy file: {copy_e}")
+                continue
+    
+    # Verify we have the expected number of frame files
+    frame_files = glob.glob(os.path.join(temp_dir, "frame_*.jpg"))
+    print(f"Created {len(frame_files)} frame files for FFmpeg")
+    
+    if len(frame_files) == 0:
+        print("Error: No frame files were created")
+        return False
     
     try:
         if format_type.lower() == "gif":
-            # Create GIF with palette optimization
-            cmd = [
+            # Create GIF with palette optimization (two-pass process)
+            print("Generating palette for GIF optimization...")
+            
+            # First pass: generate palette
+            palette_cmd = [
                 "ffmpeg", "-y",
                 "-framerate", str(framerate),
                 "-i", f"{temp_dir}/frame_%06d.jpg",
                 "-vf", "fps=5,scale=640:-1:flags=lanczos,palettegen=reserve_transparent=0",
-                "-t", "1",
                 "/tmp/palette.png"
             ]
-            subprocess.run(cmd, check=True, capture_output=True)
+            subprocess.run(palette_cmd, check=True, capture_output=True)
             
-            cmd = [
+            print("Creating GIF with optimized palette...")
+            
+            # Second pass: create GIF using palette
+            gif_cmd = [
                 "ffmpeg", "-y",
                 "-framerate", str(framerate),
                 "-i", f"{temp_dir}/frame_%06d.jpg",
                 "-i", "/tmp/palette.png",
-                "-vf", "fps=5,scale=640:-1:flags=lanczos [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=5",
+                "-filter_complex", "[0:v]fps=5,scale=640:-1:flags=lanczos[v];[v][1:v]paletteuse=dither=bayer:bayer_scale=5",
                 output_path
             ]
+            result = subprocess.run(gif_cmd, check=True, capture_output=True, text=True)
         else:
             # Create MP4
-            cmd = [
+            print("Creating MP4 timelapse...")
+            mp4_cmd = [
                 "ffmpeg", "-y",
                 "-framerate", str(framerate),
                 "-i", f"{temp_dir}/frame_%06d.jpg",
@@ -141,8 +225,8 @@ def create_timelapse(image_files, output_path, format_type="mp4", framerate=10):
                 "-preset", "medium",
                 output_path
             ]
+            result = subprocess.run(mp4_cmd, check=True, capture_output=True, text=True)
         
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         print(f"Timelapse created successfully: {output_path}")
         return True
         
