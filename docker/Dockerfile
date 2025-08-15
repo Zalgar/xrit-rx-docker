@@ -62,21 +62,26 @@ RUN python3 tools/keymsg-decrypt.py EncryptionKeyMessage_001F2904C905.bin 001F29
 
 # Copy entry script
 COPY docker/entry.sh /xrit-rx/entry.sh
-RUN apk add --no-cache dos2unix \
-    && dos2unix /xrit-rx/entry.sh \
-    && chmod +x /xrit-rx/entry.sh \
+RUN chmod +x /xrit-rx/entry.sh \
     && chmod +x /xrit-rx/tools/timelapse.py \
     && chmod +x /xrit-rx/tools/timelapse_service.py
 
 # Create non-root user and setup permissions
-RUN adduser -D -u 1000 xrituser && \
-    mkdir -p /xrit-rx/received/LRIT && \
+# TODO: Re-enable rootless container after fixing permission issues
+# RUN adduser -D -u 1000 xrituser && \
+#     mkdir -p /xrit-rx/received/LRIT && \
+#     mkdir -p /xrit-rx/received/HRIT && \
+#     mkdir -p /xrit-rx/received/timelapses && \
+#     chown -R xrituser:xrituser /xrit-rx && \
+#     chmod -R 755 /xrit-rx && \
+#     chmod -R 755 /xrit-rx/received && \
+#     chmod u+w -R /xrit-rx/received
+# USER xrituser
+
+# Create required directories with root permissions (temporary fix)
+RUN mkdir -p /xrit-rx/received/LRIT && \
     mkdir -p /xrit-rx/received/HRIT && \
-    mkdir -p /xrit-rx/received/timelapses && \
-    chown -R xrituser:xrituser /xrit-rx && \
-    chmod -R 755 /xrit-rx/received && \
-    chmod -R 775 /xrit-rx/received/timelapses
-USER xrituser
+    mkdir -p /xrit-rx/received/timelapses
 
 # Expose port
 EXPOSE 1692
