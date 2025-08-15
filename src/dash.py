@@ -104,7 +104,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """
         # Log the request for security monitoring
         client_ip = self.client_address[0]
-        logging.info(f"HTTP GET request from {client_ip}: {self.path}")
+        
+        # Use different log levels: DEBUG for API requests, INFO for others
+        if self.path.startswith("/api/") or self.path == "/api":
+            logging.debug(f"API request from {client_ip}: {self.path}")
+        else:
+            logging.info(f"HTTP GET request from {client_ip}: {self.path}")
 
         # Respond with index.html content on root path requests
         if self.path == "/": self.path = "index.html"
@@ -147,7 +152,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """
         # Log the request for security monitoring
         client_ip = self.client_address[0]
-        logging.info(f"HTTP HEAD request from {client_ip}: {self.path}")
+        
+        # Use different log levels: DEBUG for API requests, INFO for others
+        if self.path.startswith("/api/") or self.path == "/api":
+            logging.debug(f"API HEAD request from {client_ip}: {self.path}")
+        else:
+            logging.info(f"HTTP HEAD request from {client_ip}: {self.path}")
         
         # Respond with index.html content on root path requests
         if self.path == "/": self.path = "index.html"
@@ -413,10 +423,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def is_safe_path(self, path):
         """
-        Check if path is safe (within output directory)
+        Check if path is safe (within output directory or timelapses directory)
         """
         try:
-            return os.path.commonpath([dash_config.output, path]) == dash_config.output
+            # Check if path is within the output directory (received)
+            output_abs = os.path.abspath(dash_config.output)
+            path_abs = os.path.abspath(path)
+            
+            # Allow files within the output directory
+            try:
+                if os.path.commonpath([output_abs, path_abs]) == output_abs:
+                    return True
+            except ValueError:
+                pass
+            
+            # Allow files within the timelapses directory (sibling to output)
+            timelapses_abs = os.path.abspath(os.path.join(os.path.dirname(dash_config.output), "timelapses"))
+            try:
+                if os.path.commonpath([timelapses_abs, path_abs]) == timelapses_abs:
+                    return True
+            except ValueError:
+                pass
+            
+            return False
         except ValueError:
             return False
 

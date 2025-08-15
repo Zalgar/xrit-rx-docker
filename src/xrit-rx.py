@@ -16,7 +16,8 @@ from colorama import Fore, Back, Style
 from configparser import ConfigParser, NoOptionError, NoSectionError
 import json
 import logging
-from os import mkdir, path
+from os import mkdir, path, makedirs
+import os
 import socket
 from time import time, sleep
 import subprocess
@@ -47,6 +48,11 @@ demux = None            # Demuxer class object
 dash = None             # Dashboard class object
 timelapse_process = None  # Timelapse service process
 dashe = None            # Dashboard enabled flag
+dashp = None            # Dashboard HTTP port
+dashi = None            # Dashboard update interval
+log_level = None        # Logging level
+log_max_size = None     # Log file max size in MB
+log_backup_count = None # Number of backup log files
 dashp = None            # Dashboard HTTP port
 dashi = None            # Dashboard refresh interval (sec)
 ver = "2.0.0"           # xrit-rx version
@@ -111,6 +117,60 @@ def start_timelapse_service():
         print(Fore.YELLOW + Style.BRIGHT + f"TIMELAPSE SERVICE FAILED TO START: {e}")
 
 
+def setup_log_cleanup(logs_dir):
+    """
+    Setup log cleanup to prevent logs from growing indefinitely
+    Removes log files older than 30 days and limits total log files
+    """
+    import glob
+    import time
+    
+    try:
+        # Get all log files in the directory (including rotated ones)
+        log_pattern = path.join(logs_dir, "*.log*")
+        log_files = glob.glob(log_pattern)
+        
+        current_time = time.time()
+        max_age_days = 30
+        max_age_seconds = max_age_days * 24 * 60 * 60
+        max_log_files = 50
+        
+        # Remove logs older than max_age_days
+        old_files = []
+        for log_file in log_files:
+            try:
+                file_age = current_time - path.getmtime(log_file)
+                if file_age > max_age_seconds:
+                    old_files.append(log_file)
+            except OSError:
+                continue
+        
+        # Remove old files
+        for old_file in old_files:
+            try:
+                os.remove(old_file)
+                print(f"Removed old log file: {path.basename(old_file)}")
+            except OSError as e:
+                print(f"Could not remove old log file {old_file}: {e}")
+        
+        # If still too many files, remove oldest ones
+        remaining_files = [f for f in log_files if f not in old_files]
+        if len(remaining_files) > max_log_files:
+            # Sort by modification time (oldest first)
+            remaining_files.sort(key=lambda x: path.getmtime(x))
+            files_to_remove = remaining_files[:-max_log_files]
+            
+            for file_to_remove in files_to_remove:
+                try:
+                    os.remove(file_to_remove)
+                    print(f"Removed excess log file: {path.basename(file_to_remove)}")
+                except OSError as e:
+                    print(f"Could not remove excess log file {file_to_remove}: {e}")
+                    
+    except Exception as e:
+        print(f"Warning: Log cleanup failed: {e}")
+
+
 def init():
     print("┌──────────────────────────────────────────────┐")
     print("│                   xrit-rx                    │")
@@ -126,16 +186,6 @@ def init():
     global demux
     global dash
 
-    # Setup logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler('xrit-rx.log', mode='a')
-        ]
-    )
-    
     # Initialise Colorama
     colorama.init(autoreset=True)
 
@@ -143,6 +193,54 @@ def init():
     args = parse_args()
     config = parse_config(args.config)
     print_config()
+
+    # Setup logging after config is parsed
+    # Create logs directory if it doesn't exist
+    try:
+        logs_dir = path.join(path.dirname(output), "logs")
+        if not path.exists(logs_dir):
+            makedirs(logs_dir, exist_ok=True)
+        
+        log_file = path.join(logs_dir, 'xrit-rx.log')
+        
+        # Setup log rotation and cleanup
+        setup_log_cleanup(logs_dir)
+        
+        # File logging only (no console for API requests)
+        from logging.handlers import RotatingFileHandler
+        
+        # Convert log level string to logging constant
+        level_map = {
+            'DEBUG': logging.DEBUG,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'ERROR': logging.ERROR
+        }
+        log_level_const = level_map.get(log_level, logging.INFO)
+        
+        # Use rotating file handler to automatically manage log size
+        file_handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=log_max_size*1024*1024,  # Convert MB to bytes
+            backupCount=log_backup_count,
+            mode='a'
+        )
+        
+        logging.basicConfig(
+            level=log_level_const,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[file_handler]
+        )
+        print(f"Logging configured: {log_file} (Level: {log_level}, {log_max_size}MB max, {log_backup_count} backups)")
+        
+    except Exception as e:
+        # Fallback to console-only logging if file logging fails
+        print(f"Warning: Could not setup file logging ({e}), using console only")
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[logging.StreamHandler()]
+        )
 
     # Configure directories and input source
     dirs()
@@ -506,6 +604,9 @@ def parse_config(path):
     global dashe
     global dashp
     global dashi
+    global log_level
+    global log_max_size
+    global log_backup_count
 
     cfgp = ConfigParser()
     cfgp.read(path)
@@ -526,6 +627,22 @@ def parse_config(path):
         dashe = cfgp.getboolean('dashboard', 'enabled')
         dashp = cfgp.get('dashboard', 'port')
         dashi = round((float(cfgp.get('dashboard', 'interval'))), 1)
+        
+        # Parse logging config with defaults
+        try:
+            log_level = cfgp.get('logging', 'level').upper()
+        except (NoSectionError, NoOptionError):
+            log_level = 'INFO'
+            
+        try:
+            log_max_size = int(cfgp.get('logging', 'max_size_mb'))
+        except (NoSectionError, NoOptionError):
+            log_max_size = 10
+            
+        try:
+            log_backup_count = int(cfgp.get('logging', 'backup_count'))
+        except (NoSectionError, NoOptionError):
+            log_backup_count = 5
     except (NoSectionError, NoOptionError) as e:
         print(Fore.WHITE + Back.RED + Style.BRIGHT + "ERROR PARSING CONFIG FILE: " + str(e).upper())
         safe_stop()

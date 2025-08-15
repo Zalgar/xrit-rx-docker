@@ -30,3 +30,12 @@ vchan = 5002
 enabled = true
 port = 1692
 interval = 1
+
+[logging]
+# Log level: DEBUG, INFO, WARNING, ERROR
+# DEBUG will log all API requests, INFO will only log non-API requests
+level = INFO
+# Maximum log file size in MB before rotation
+max_size_mb = 10
+# Number of backup log files to keep
+backup_count = 5
