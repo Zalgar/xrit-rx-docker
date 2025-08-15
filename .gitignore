@@ -115,3 +115,7 @@ release/*
 .vscode/*
 xrit-rx.ini
 */xrit-rx.ini
+src/timelapses/*
+src/logs/*
+logs/*
+timelapses/*
