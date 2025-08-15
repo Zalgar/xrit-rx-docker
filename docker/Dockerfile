@@ -81,7 +81,8 @@ RUN chmod +x /xrit-rx/entry.sh \
 # Create required directories with root permissions (temporary fix)
 RUN mkdir -p /xrit-rx/received/LRIT && \
     mkdir -p /xrit-rx/received/HRIT && \
-    mkdir -p /xrit-rx/received/timelapses
+    mkdir -p /xrit-rx/timelapses && \
+    mkdir -p /xrit-rx/logs
 
 # Expose port
 EXPOSE 1692

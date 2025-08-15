@@ -66,20 +66,26 @@ def start_timelapse_service():
             return
             
         # Create log file for timelapse service debugging
-        log_file = path.join(output, "timelapse_service.log")
+        logs_dir = path.join(path.dirname(output), "logs")
+        log_file = path.join(logs_dir, "timelapse_service.log")
         
-        # Ensure the output directory exists and is writable
-        if not path.exists(output):
-            mkdir(output)
+        # Ensure the logs directory exists and is writable
+        if not path.exists(logs_dir):
+            try:
+                mkdir(logs_dir)
+            except PermissionError:
+                print(Fore.YELLOW + Style.BRIGHT + f"PERMISSION DENIED creating logs directory: {logs_dir}")
+                log_file = None
         
         # Test if we can write to the log file
-        try:
-            with open(log_file, 'w') as test_log:
-                test_log.write(f"Timelapse service starting at {time()}\n")
-        except PermissionError:
-            print(Fore.YELLOW + Style.BRIGHT + f"PERMISSION DENIED for log file: {log_file}")
-            print(Fore.YELLOW + Style.BRIGHT + "Running timelapse service without file logging")
-            log_file = None
+        if log_file:
+            try:
+                with open(log_file, 'w') as test_log:
+                    test_log.write(f"Timelapse service starting at {time()}\n")
+            except PermissionError:
+                print(Fore.YELLOW + Style.BRIGHT + f"PERMISSION DENIED for log file: {log_file}")
+                print(Fore.YELLOW + Style.BRIGHT + "Running timelapse service without file logging")
+                log_file = None
         
         # Start timelapse service as background process with logging
         if log_file:

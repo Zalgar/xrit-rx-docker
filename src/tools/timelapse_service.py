@@ -21,7 +21,8 @@ class TimelapseService:
             check_interval: Seconds between file checks (default: 5 minutes)
         """
         self.received_dir = received_dir
-        self.output_dir = os.path.join(received_dir, "timelapses")
+        # Change timelapses to be sibling directory to received
+        self.output_dir = os.path.join(os.path.dirname(received_dir), "timelapses")
         self.check_interval = check_interval
         self.timelapse_script = os.path.join(os.path.dirname(__file__), "timelapse.py")
         

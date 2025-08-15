@@ -180,11 +180,39 @@ Add to crontab for automatic timelapse generation:
 ```
 
 **Dashboard Integration:**
-The dashboard includes buttons for manual timelapse creation. Generated files are saved to `received/timelapses/` and can be downloaded directly through the web interface.
+The dashboard includes buttons for manual timelapse creation (handled internally by the timelapse service). Generated files are saved to `timelapses/` directory (sibling to the `received/` directory) and can be downloaded directly through the web interface via the `/api/timelapses/` endpoint.
 
 **Docker Usage:**
-When using Docker, timelapses are automatically saved to the mounted `received` volume and accessible from the host system.
+When using Docker, timelapses are automatically saved to the mounted volume at `timelapses/` and accessible from the host system alongside the `received/` and `logs/` directories.
 
+## Directory Structure
+
+**xrit-rx** now uses a clean directory structure with separate directories for different types of data:
+
+```
+/working/directory/
+├── received/           # Satellite imagery and data files
+│   └── LRIT/
+│       └── 20250116/
+│           ├── FD/     # Full Disk images
+│           ├── SICEF24/ # Sea Ice Forecast 24h
+│           └── ...     # Other image types
+├── timelapses/         # Generated timelapse videos and GIFs
+│   ├── FD_24h_2025-01-16.mp4
+│   ├── FD_3h_2025-01-16.gif
+│   └── ...
+└── logs/               # Application and processing logs
+    ├── xrit-rx.log
+    ├── timelapse.log
+    └── ...
+```
+
+**Key Changes:**
+- **Timelapses moved**: From `received/timelapses/` to standalone `timelapses/` directory
+- **Logs separated**: From `received/logs/` to standalone `logs/` directory  
+- **Improved organization**: Each data type has its own top-level directory
+- **Streamlined API**: New `/api/timelapses/` endpoint provides direct access to timelapse files
+- **Legacy support**: Timelapse listing via `/api/timelapse/list` continues to work
 
 ## HTTP API
 **xrit-rx** has a comprehensive API accessible via HTTP primarily to support its web-based monitoring dashboard.
@@ -261,6 +289,9 @@ The latest image endpoints have been significantly enhanced beyond the original 
 | `/api/latest/{type}/image` | **Enhanced**: Direct serving of completed image file with proper headers | *Raw JPEG/PNG binary data* | `image/jpeg`, `image/png` |
 | `/api/latest/{type}/partial` | **NEW**: Real-time partial/preview image for actively downloading products | *Raw image data with black areas for missing segments, updates as segments arrive* | `image/jpeg`, `image/png` |
 | `/api/latest/xrit` | Path to most recently received xRIT file | `{ "xrit": "received/LRIT/[...].lrit", "timestamp": "2025-08-10T12:00:00Z" }` | `application/json` |
+| `/api/timelapse/list` | List available timelapse files | `{ "timelapses": [{"filename": "FD_24h_2025-01-16.mp4", "size": 5242880, "created": 1737936000, "url": "/api/timelapses/FD_24h_2025-01-16.mp4"}] }` | `application/json` |
+| `/api/timelapses/` | List available timelapse files from timelapses/ directory | *Same as /api/timelapse/list* | `application/json` |
+| `/api/timelapses/{filename}` | **NEW**: Direct serving of timelapse files from timelapses/ directory | *Raw MP4/GIF binary data* | `video/mp4`, `image/gif` |
 
 #### API Usage Examples
 
@@ -283,6 +314,18 @@ curl http://localhost:1692/api/current/progress
 
 # Check which products have partial images available
 curl http://localhost:1692/api/current/partial
+```
+
+**Timelapse Management:**
+```bash
+# List all available timelapses
+curl http://localhost:1692/api/timelapses/
+
+# Download a specific timelapse directly
+curl http://localhost:1692/api/timelapses/FD_24h_2025-01-16.mp4 -o timelapse.mp4
+
+# List timelapses using legacy endpoint
+curl http://localhost:1692/api/timelapse/list
 ```
 
 **Integration Examples:**

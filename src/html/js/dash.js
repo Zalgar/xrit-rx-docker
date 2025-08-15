@@ -528,10 +528,10 @@ function block_progress(element)
 function loadTimelapses() {
     // Use the existing file serving mechanism instead of custom API endpoints
     const timelapseFiles = [
-        { name: '3h MP4', api: '/api/received/timelapses/latest_3h_mp4.mp4', hours: 3, format: 'MP4' },
-        { name: '24h MP4', api: '/api/received/timelapses/latest_24h_mp4.mp4', hours: 24, format: 'MP4' },
-        { name: '3h GIF', api: '/api/received/timelapses/latest_3h_gif.gif', hours: 3, format: 'GIF' },
-        { name: '24h GIF', api: '/api/received/timelapses/latest_24h_gif.gif', hours: 24, format: 'GIF' }
+        { name: '3h MP4', api: '/api/timelapses/latest_3h_mp4.mp4', hours: 3, format: 'MP4' },
+        { name: '24h MP4', api: '/api/timelapses/latest_24h_mp4.mp4', hours: 24, format: 'MP4' },
+        { name: '3h GIF', api: '/api/timelapses/latest_3h_gif.gif', hours: 3, format: 'GIF' },
+        { name: '24h GIF', api: '/api/timelapses/latest_24h_gif.gif', hours: 24, format: 'GIF' }
     ];
     
     const statusElement = document.getElementById('timelapse-status');
@@ -625,7 +625,7 @@ function loadLatestTimelapse() {
     const videoElement = document.getElementById('latest-timelapse-video');
     
     // Try to load 3hr MP4 timelapse using existing file serving mechanism
-    const timelapseUrl = '/api/received/timelapses/latest_3h_mp4.mp4';
+    const timelapseUrl = '/api/timelapses/latest_3h_mp4.mp4';
     
     // Test if the file exists
     fetch(timelapseUrl, { method: 'HEAD' })
