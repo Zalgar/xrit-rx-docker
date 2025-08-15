@@ -11,6 +11,7 @@ Original work by sam210723: https://github.com/sam210723/xrit-rx
 from colorama import Fore, Back, Style
 import http.server
 import json
+import logging
 import mimetypes
 import os
 import socketserver
@@ -101,6 +102,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """
         Respond to GET requests
         """
+        # Log the request for security monitoring
+        client_ip = self.client_address[0]
+        logging.info(f"HTTP GET request from {client_ip}: {self.path}")
 
         # Respond with index.html content on root path requests
         if self.path == "/": self.path = "index.html"
@@ -141,6 +145,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """
         Respond to HEAD requests (same as GET but without body)
         """
+        # Log the request for security monitoring
+        client_ip = self.client_address[0]
+        logging.info(f"HTTP HEAD request from {client_ip}: {self.path}")
         
         # Respond with index.html content on root path requests
         if self.path == "/": self.path = "index.html"
@@ -155,7 +162,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 # Don't send body for HEAD requests
             else:                                                       # Local file requests
-                self.path = "html/{}".format(self.path)
+                # Sanitize and validate file path
+                requested_path = self.path.lstrip('/')
+                safe_path = self.sanitize_file_path(requested_path)
+                if safe_path is None:
+                    self.send_response(403)
+                    self.end_headers()
+                    return
+                
+                self.path = safe_path
 
                 if os.path.isfile(self.path):                           # Requested file exists (HTTP 200)
                     self.send_response(200)
@@ -192,6 +207,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Requested endpoint path
         path = path.replace("/api", "").split("/")
         path = None if len(path) == 1 else path[1:]
+
+        # Validate path components
+        if path is not None:
+            for component in path:
+                if not self.is_valid_path_component(component):
+                    logging.warning(f"Invalid path component detected: {component}")
+                    status = 400
+                    content = {'error': 'Invalid path component'}
+                    return json.dumps(content).encode('utf-8'), status, mime
 
         if path is None:                                        # Root API endpoint
             content = {
@@ -447,6 +471,50 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return os.path.commonpath([dash_config.output, path]) == dash_config.output
         except ValueError:
             return False
+
+    def sanitize_file_path(self, requested_path):
+        """
+        Sanitize and validate file path to prevent directory traversal
+        """
+        # Remove any path traversal attempts
+        if '..' in requested_path or requested_path.startswith('/'):
+            return None
+        
+        # Build safe path within html directory
+        html_dir = os.path.abspath("html")
+        full_path = os.path.join(html_dir, requested_path)
+        
+        # Ensure the resolved path is within html directory
+        try:
+            if os.path.commonpath([html_dir, os.path.abspath(full_path)]) != html_dir:
+                return None
+        except ValueError:
+            return None
+        
+        return full_path
+
+    def is_valid_path_component(self, component):
+        """
+        Validate individual path components for API security
+        """
+        # Check for common attack patterns
+        if not component or component in ['.', '..']:
+            return False
+        
+        # Check for null bytes and control characters
+        if '\x00' in component or any(ord(c) < 32 for c in component if c != '\t'):
+            return False
+        
+        # Check length (reasonable limit)
+        if len(component) > 100:
+            return False
+        
+        # Allow alphanumeric, dash, underscore, and dot
+        import re
+        if not re.match(r'^[a-zA-Z0-9._-]+$', component):
+            return False
+        
+        return True
 
     def log_message(self, format, *args):
         """

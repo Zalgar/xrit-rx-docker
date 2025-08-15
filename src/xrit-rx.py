@@ -14,6 +14,8 @@ from collections import namedtuple
 import colorama
 from colorama import Fore, Back, Style
 from configparser import ConfigParser, NoOptionError, NoSectionError
+import json
+import logging
 from os import mkdir, path
 import socket
 from time import time, sleep
@@ -118,6 +120,16 @@ def init():
     global demux
     global dash
 
+    # Setup logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler('xrit-rx.log', mode='a')
+        ]
+    )
+    
     # Initialise Colorama
     colorama.init(autoreset=True)
 
@@ -198,8 +210,20 @@ def loop():
         if source == "GOESRECV":
             try:
                 data = sck.recv(buflen + 8)
+                # Validate received data
+                if len(data) < 8:
+                    print(Fore.YELLOW + "Warning: Received incomplete packet, skipping")
+                    continue
+                if len(data) > buflen + 8:
+                    print(Fore.YELLOW + f"Warning: Received oversized packet ({len(data)} bytes), truncating")
+                    data = data[:buflen + 8]
             except ConnectionResetError:
+                logging.error("Lost connection to goesrecv")
                 print(Fore.WHITE + Back.RED + Style.BRIGHT + "LOST CONNECTION TO GOESRECV")
+                safe_stop()
+            except Exception as e:
+                logging.error(f"Error receiving data from goesrecv: {e}")
+                print(Fore.RED + f"GOESRECV ERROR: {e}")
                 safe_stop()
 
             if len(data) == buflen + 8:
@@ -208,8 +232,20 @@ def loop():
         elif source == "OSP":
             try:
                 data = sck.recv(buflen)
+                # Validate received data size
+                if len(data) == 0:
+                    print(Fore.YELLOW + "Warning: Received empty packet from OSP")
+                    continue
+                if len(data) > buflen:
+                    print(Fore.YELLOW + f"Warning: Received oversized OSP packet ({len(data)} bytes), truncating")
+                    data = data[:buflen]
             except ConnectionResetError:
+                logging.error("Lost connection to Open Satellite Project")
                 print(Fore.WHITE + Back.RED + Style.BRIGHT + "LOST CONNECTION TO OPEN SATELLITE PROJECT")
+                safe_stop()
+            except Exception as e:
+                logging.error(f"Error receiving data from OSP: {e}")
+                print(Fore.RED + f"OSP ERROR: {e}")
                 safe_stop()
             
             demux.push(data)
@@ -217,8 +253,16 @@ def loop():
         elif source == "UDP":
             try:
                 data, address = sck.recvfrom(buflen)
+                # Validate UDP data
+                if len(data) == 0:
+                    print(Fore.YELLOW + "Warning: Received empty UDP packet")
+                    continue
+                if len(data) > buflen:
+                    print(Fore.YELLOW + f"Warning: Received oversized UDP packet ({len(data)} bytes), truncating")
+                    data = data[:buflen]
             except Exception as e:
-                print(e)
+                logging.error(f"UDP receive error: {e}")
+                print(f"UDP receive error: {e}")
                 safe_stop()
             
             demux.push(data)
@@ -495,12 +539,19 @@ def parse_config(path):
 
     # If VCID blacklist is not empty
     if bl != "":
-        # Parse blacklist string into int or list
-        blacklist = ast.literal_eval(bl)
+        # Parse blacklist string into int or list using JSON (safer than ast.literal_eval)
+        try:
+            blacklist = json.loads(bl)
+        except json.JSONDecodeError:
+            print(Fore.YELLOW + Style.BRIGHT + f"Warning: Invalid blacklist format '{bl}', using empty blacklist")
+            blacklist = []
 
         # If parsed into int, wrap int in list
         if isinstance(blacklist, int):
             blacklist = [blacklist]
+        elif not isinstance(blacklist, list):
+            print(Fore.YELLOW + Style.BRIGHT + f"Warning: Blacklist must be int or list, got {type(blacklist)}, using empty blacklist")
+            blacklist = []
 
     return cfgp
 
