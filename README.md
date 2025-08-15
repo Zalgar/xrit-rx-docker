@@ -214,6 +214,36 @@ When using Docker, timelapses are automatically saved to the mounted volume at `
 - **Streamlined API**: New `/api/timelapses/` endpoint provides direct access to timelapse files
 - **Legacy support**: Timelapse listing via `/api/timelapse/list` continues to work
 
+## Logging Configuration
+
+**xrit-rx** includes comprehensive logging with automatic cleanup and rotation:
+
+### Features
+- **File-only logging**: API requests don't clutter console output
+- **Automatic rotation**: Log files rotate when they reach configured size limits
+- **Automatic cleanup**: Old log files are automatically removed
+- **Configurable levels**: Control verbosity (DEBUG shows all API requests)
+
+### Configuration
+Add to your `xrit-rx.ini` file:
+
+```ini
+[logging]
+# Log level: DEBUG, INFO, WARNING, ERROR
+# DEBUG will log all API requests, INFO will only log non-API requests
+level = INFO
+# Maximum log file size in MB before rotation
+max_size_mb = 10
+# Number of backup log files to keep
+backup_count = 5
+```
+
+### Log Management
+- **Location**: `logs/xrit-rx.log` (alongside received/ directory)
+- **Rotation**: When log reaches max size, creates .log.1, .log.2, etc.
+- **Cleanup**: Automatically removes logs older than 30 days
+- **Size limit**: Keeps maximum of 50 total log files
+
 ## HTTP API
 **xrit-rx** has a comprehensive API accessible via HTTP primarily to support its web-based monitoring dashboard.
 This may be useful for integrating **xrit-rx** with other applications.

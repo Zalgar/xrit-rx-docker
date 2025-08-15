@@ -107,41 +107,28 @@
                     </div>
 
                     <h4>Timelapse APIs</h4>
-                    <p>Automated timelapse generation and access APIs. Timelapses are generated automatically every 30 minutes using the latest received images.</p>
+                    <p>Automated timelapse generation and access APIs. Timelapses are generated automatically every 30 minutes using the latest received images and stored in the timelapses/ directory.</p>
                     
                     <div class="api-endpoint">
-                        <code>GET /api/received/timelapses/{filename}</code>
-                        <p><strong>Direct Timelapse Access:</strong> Download timelapse videos using the standard file serving mechanism.</p>
+                        <code>GET /api/timelapses/</code>
+                        <p><strong>List Available Timelapses:</strong> Returns JSON list of all available timelapse files with metadata including file size, creation time, and download URLs.</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <code>GET /api/timelapses/{filename}</code>
+                        <p><strong>Direct Timelapse Access:</strong> Download timelapse videos directly from the timelapses directory.</p>
                         <ul>
                             <li><strong>latest_3h_mp4.mp4</strong>: 3-hour MP4 timelapse</li>
                             <li><strong>latest_24h_mp4.mp4</strong>: 24-hour MP4 timelapse</li>
                             <li><strong>latest_3h_gif.gif</strong>: 3-hour GIF timelapse</li>
                             <li><strong>latest_24h_gif.gif</strong>: 24-hour GIF timelapse</li>
                         </ul>
-                        <small>Example: <code>/api/received/timelapses/latest_3h_mp4.mp4</code></small>
+                        <small>Example: <code>/api/timelapses/latest_3h_mp4.mp4</code></small>
                     </div>
 
                     <div class="api-endpoint">
                         <code>GET /api/timelapse/list</code>
-                        <p>Returns JSON list of all available timelapse files with metadata including file size, creation time, and download URLs.</p>
-                    </div>
-
-                    <div class="api-endpoint">
-                        <code>GET /api/timelapse/create</code>
-                        <p><strong>Manual Timelapse Creation:</strong> Trigger custom timelapse generation (background process).</p>
-                        <p><strong>Query Parameters:</strong></p>
-                        <ul>
-                            <li><strong>hours</strong>: Duration in hours (3 or 24)</li>
-                            <li><strong>type</strong>: Image type (usually "FD" for Full Disk)</li>
-                            <li><strong>format</strong>: Output format ("mp4" or "gif")</li>
-                        </ul>
-                        <small>Example: <code>/api/timelapse/create?hours=24&type=FD&format=mp4</code></small>
-                    </div>
-
-                    <div class="api-endpoint">
-                        <code>GET /api/timelapse/download/{filename}</code>
-                        <p>Download specific timelapse file by exact filename from the timelapses directory.</p>
-                        <small>Use with filename from <code>/api/timelapse/list</code> response</small>
+                        <p><strong>Legacy Endpoint:</strong> Returns JSON list of all available timelapse files with metadata. Same functionality as <code>/api/timelapses/</code>.</p>
                     </div>
 
                     <h4>Timelapse Specifications</h4>
@@ -232,59 +219,63 @@
 
                     <h5>Timelapse Operations</h5>
                     <div class="api-endpoint">
-                        <code>curl http://localhost:1692/api/received/timelapses/latest_3h_mp4.mp4 --output timelapse_3h.mp4</code>
+                        <code>curl http://localhost:1692/api/timelapses/latest_3h_mp4.mp4 --output timelapse_3h.mp4</code>
                         <p>Download the latest 3-hour MP4 timelapse</p>
                     </div>
 
                     <div class="api-endpoint">
-                        <code>curl http://localhost:1692/api/received/timelapses/latest_24h_gif.gif --output timelapse_24h.gif</code>
+                        <code>curl http://localhost:1692/api/timelapses/latest_24h_gif.gif --output timelapse_24h.gif</code>
                         <p>Download the latest 24-hour GIF timelapse</p>
                     </div>
 
                     <div class="api-endpoint">
-                        <code>curl http://localhost:1692/api/timelapse/list</code>
+                        <code>curl http://localhost:1692/api/timelapses/</code>
                         <p>List all available timelapse files with metadata</p>
                     </div>
-
-                    <div class="api-endpoint">
-                        <code>curl -X GET "http://localhost:1692/api/timelapse/create?hours=24&type=FD&format=mp4"</code>
-                        <p>Trigger creation of a custom 24-hour MP4 timelapse (asynchronous)</p>
-                    </div>
-
                     <h4>HTTP Status Codes</h4>
                     <ul>
                         <li><strong>200 OK</strong> - Request successful, data returned</li>
-                        <li><strong>400 Bad Request</strong> - Invalid parameters (e.g., wrong duration or format for timelapse)</li>
                         <li><strong>404 Not Found</strong> - Resource not available or doesn't exist (image/timelapse not ready)</li>
                         <li><strong>500 Internal Server Error</strong> - Server error occurred during processing</li>
                     </ul>
 
                     <h4>Timelapse Response Examples</h4>
                     <div class="api-endpoint">
-                        <strong>Success Response (timelapse/create):</strong>
+                        <strong>List Response (/api/timelapses/):</strong>
                         <pre><code>{
-  "status": "started",
-  "message": "Timelapse creation started for 3h of FD images in mp4 format",
-  "estimated_time": "30-60 seconds"
+  "timelapses": [
+    {
+      "filename": "latest_24h_mp4.mp4",
+      "size": 5242880,
+      "created": 1737936000,
+      "url": "/api/timelapses/latest_24h_mp4.mp4"
+    },
+    {
+      "filename": "latest_3h_gif.gif",
+      "size": 1048576,
+      "created": 1737939600,
+      "url": "/api/timelapses/latest_3h_gif.gif"
+    }
+  ]
 }</code></pre>
                     </div>
 
                     <div class="api-endpoint">
-                        <strong>Error Response (invalid parameters):</strong>
+                        <strong>Error Response (file not found):</strong>
                         <pre><code>{
-  "error": "Duration must be 3h or 24h"
+  "error": "Timelapse file not found"
 }</code></pre>
                     </div>
 
                     <div class="api-endpoint">
-                        <strong>List Response (timelapse/list):</strong>
+                        <strong>List Response (legacy /api/timelapse/list):</strong>
                         <pre><code>{
   "timelapses": [
     {
       "filename": "latest_3h_mp4.mp4",
       "size": 2547832,
       "created": 1723362000,
-      "url": "/api/timelapse/download/latest_3h_mp4.mp4"
+      "url": "/api/timelapses/latest_3h_mp4.mp4"
     }
   ]
 }</code></pre>
