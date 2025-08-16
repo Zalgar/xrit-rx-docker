@@ -12,7 +12,17 @@
     <body onload="init()">
         <h2 id="dash-heading">&nbsp;</h2>
 
-        <div id="container">
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab-button active" onclick="openTab(event, 'tab-dashboard')">Dashboard</button>
+                <button class="tab-button" onclick="openTab(event, 'tab-images')">Latest Images</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab Content -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div id="container">
             <div class="block" id="block-vchan">
                 <div class="block-heading"></div>
                 <div class="block-body"></div>
@@ -72,6 +82,23 @@
                         <button onclick="showTimelapseInfo()" class="timelapse-btn">ℹ️ Info</button>
                     </div>
                     <div id="timelapse-status" style="margin-top: 10px; color: #CCC;">Loading timelapses...</div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Latest Images Tab Content -->
+        <div id="tab-images" class="tab-content">
+            <div id="images-container">
+                <div class="images-header">
+                    <h3>Latest Images by Type</h3>
+                    <div class="images-controls">
+                        <button onclick="refreshAllImages()" class="refresh-btn">🔄 Refresh All</button>
+                        <button onclick="toggleImageSizes()" class="size-btn">📏 Toggle Size</button>
+                    </div>
+                </div>
+                <div id="images-grid" class="images-grid">
+                    <p>Loading latest images...</p>
                 </div>
             </div>
         </div>

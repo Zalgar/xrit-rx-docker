@@ -673,3 +673,231 @@ function showTimelapseInfo() {
         loadTimelapses();
     }, 5000);
 }
+
+/**
+ * Tab Management Functions
+ */
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    
+    // Hide all tab content
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].classList.remove("active");
+    }
+    
+    // Remove active class from all tab buttons
+    tablinks = document.getElementsByClassName("tab-button");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].classList.remove("active");
+    }
+    
+    // Show the selected tab and mark button as active
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+    
+    // Load images when Images tab is opened
+    if (tabName === 'tab-images') {
+        loadAllImages();
+    }
+}
+
+/**
+ * Latest Images Management
+ */
+var imageTypes = {
+    'FD': 'Full Disk - Complete Earth hemisphere imagery',
+    'SICEF24': 'Sea Ice Concentration Forecast (24h)',
+    'SICEF48': 'Sea Ice Concentration Forecast (48h)', 
+    'SSTF24': 'Sea Surface Temperature Forecast (24h)',
+    'SSTF48': 'Sea Surface Temperature Forecast (48h)',
+    'SSTF72': 'Sea Surface Temperature Forecast (72h)',
+    'SSTA': 'Sea Surface Temperature Analysis',
+    'COMSFOG': 'Communications Fog Analysis',
+    'COMSIR1': 'Communications Infrared Channel 1',
+    'FCT': 'Forecast Data Products',
+    'FOGVIS': 'Fog Visibility Analysis',
+    'GWW3F': 'Global Wave Watch III Forecast',
+    'RWW3A': 'Regional Wave Watch III Analysis',
+    'RWW3F': 'Regional Wave Watch III Forecast',
+    'RWW3M': 'Regional Wave Watch III Model',
+    'SUFA03': 'Surface Analysis (3h intervals)',
+    'SUFA12': 'Surface Analysis (12h intervals)', 
+    'SUFF24': 'Surface Forecast (24h)',
+    'UP50A': 'Upper Level Analysis (50hPa)',
+    'UP50F24': 'Upper Level Forecast (50hPa, 24h)',
+    'UP50F48': 'Upper Level Forecast (50hPa, 48h)',
+    'ANT': 'Alpha-Numeric Text (schedules)',
+    'ADD': 'Additional Data Products'
+};
+
+var imageSizeMode = 'normal'; // 'normal' or 'large'
+
+function loadAllImages() {
+    const grid = document.getElementById('images-grid');
+    grid.innerHTML = '<div class="loading-grid">Loading latest images...</div>';
+    
+    const imageKeys = Object.keys(imageTypes);
+    let loadedCount = 0;
+    let imageData = {};
+    
+    // Load metadata for each image type
+    imageKeys.forEach(type => {
+        http_get(`/api/latest/${type.toLowerCase()}`, (res) => {
+            if (res.status == 200) {
+                res.json().then((data) => {
+                    imageData[type] = data;
+                    console.log(`Loaded data for ${type}:`, data); // Debug log
+                }).catch(err => {
+                    console.error(`JSON parse error for ${type}:`, err);
+                    imageData[type] = null;
+                }).finally(() => {
+                    loadedCount++;
+                    if (loadedCount === imageKeys.length) {
+                        renderImageGrid(imageData);
+                    }
+                });
+            } else {
+                console.log(`No data for ${type}, status: ${res.status}`); // Debug log
+                imageData[type] = null;
+                loadedCount++;
+                if (loadedCount === imageKeys.length) {
+                    renderImageGrid(imageData);
+                }
+            }
+        });
+    });
+}
+
+function renderImageGrid(imageData) {
+    const grid = document.getElementById('images-grid');
+    grid.className = `images-grid ${imageSizeMode}`;
+    
+    let html = '';
+    
+    Object.keys(imageTypes).forEach(type => {
+        const data = imageData[type];
+        const description = imageTypes[type];
+        
+        html += `
+            <div class="image-card">
+                <div class="image-header">
+                    <div class="image-type">${type}</div>
+                    <div class="image-description">${description}</div>
+                </div>
+        `;
+        
+        if (data && data.image) {
+            const imageUrl = `/api/latest/${type.toLowerCase()}/image`;
+            const partialUrl = `/api/latest/${type.toLowerCase()}/partial`;
+            
+            html += `
+                <img class="image-preview" src="${imageUrl}" alt="${type}" 
+                     onclick="window.open('${imageUrl}', '_blank')" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="no-image" style="display: none;">Image load failed</div>
+                
+                <div class="image-info">
+                    <div class="info-row">
+                        <span class="label">Timestamp:</span>
+                        <span class="value">${formatTimestamp(data.timestamp)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">File Size:</span>
+                        <span class="value">${formatFileSize(data.size || 0)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Channel:</span>
+                        <span class="value">${data.channel !== null ? data.channel : 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Hash:</span>
+                        <span class="value" title="${data.hash || ''}">${(data.hash || '').substring(0, 16)}...</span>
+                    </div>
+                </div>
+                
+                <div class="image-actions">
+                    <a href="${imageUrl}" target="_blank" class="action-btn">📷 Full Size</a>
+                    <a href="${partialUrl}" target="_blank" class="action-btn partial">⚡ Partial</a>
+                    <button onclick="copyImageUrl('${imageUrl}')" class="action-btn">📋 Copy URL</button>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="no-image">No recent ${type} image available</div>
+                <div class="image-info">
+                    <div class="info-row">
+                        <span class="label">Status:</span>
+                        <span class="value">No data received</span>
+                    </div>
+                </div>
+                <div class="image-actions">
+                    <button class="action-btn" disabled>No image available</button>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+    });
+    
+    grid.innerHTML = html;
+}
+
+function refreshAllImages() {
+    loadAllImages();
+}
+
+function toggleImageSizes() {
+    imageSizeMode = imageSizeMode === 'normal' ? 'large' : 'normal';
+    const grid = document.getElementById('images-grid');
+    grid.className = `images-grid ${imageSizeMode}`;
+    
+    // Update button text
+    const btn = document.querySelector('.size-btn');
+    btn.textContent = imageSizeMode === 'large' ? '📏 Normal Size' : '📏 Large Size';
+}
+
+function copyImageUrl(url) {
+    const fullUrl = window.location.origin + url;
+    navigator.clipboard.writeText(fullUrl).then(() => {
+        // Show temporary feedback
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }).catch(() => {
+        // Fallback for older browsers
+        prompt('Copy this URL:', fullUrl);
+    });
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatTimestamp(timestamp) {
+    if (!timestamp) return 'Unknown';
+    
+    try {
+        // Remove the 'Z' suffix and parse as local time
+        const date = new Date(timestamp.replace('Z', ''));
+        
+        // Format as DD/MM/YYYY HH:MM:SS
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    } catch (e) {
+        return 'Invalid date';
+    }
+}

@@ -9,6 +9,7 @@ Original work by sam210723: https://github.com/sam210723/xrit-rx
 """
 
 from colorama import Fore, Back, Style
+from datetime import datetime
 import http.server
 import json
 import logging
@@ -350,10 +351,46 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 image_type = path[1].upper()  # Convert to uppercase for consistency
                 if image_type in demuxer_instance.lastImageByType:
                     type_data = demuxer_instance.lastImageByType[image_type]
+                    image_path = type_data['path']
+                    
+                    # Get additional file metadata
+                    timestamp = None
+                    size = None
+                    channel = None
+                    
+                    if image_path and os.path.isfile(image_path):
+                        try:
+                            # Get file modification time as ISO timestamp
+                            mtime = os.path.getmtime(image_path)
+                            timestamp = datetime.fromtimestamp(mtime).isoformat() + 'Z'
+                            
+                            # Get file size
+                            size = os.path.getsize(image_path)
+                            
+                            # Extract channel from filename if possible
+                            # Expected formats: IMG_[TYPE]_[SEQ]_[CHANNEL]_[DATE]_[TIME].jpg
+                            filename = os.path.basename(image_path)
+                            parts = filename.split('_')
+                            if len(parts) >= 4 and parts[0] in ['IMG', 'FDIMG']:
+                                # Channel might be like 'IR105' or just a number
+                                channel_part = parts[3]
+                                if channel_part.isdigit():
+                                    channel = int(channel_part)
+                                else:
+                                    channel = channel_part  # Keep as string for IR105, etc.
+                            elif len(parts) >= 3 and parts[0] == 'ADD':
+                                # ADD format doesn't have channel in same position
+                                channel = 'ADD'
+                        except (OSError, IOError):
+                            pass
+                    
                     content = {
-                        'image': type_data['path'],
+                        'image': image_path,
                         'hash': type_data['hash'],
-                        'type': image_type
+                        'type': image_type,
+                        'timestamp': timestamp,
+                        'size': size,
+                        'channel': channel
                     }
                 else:
                     # No image of this type found
