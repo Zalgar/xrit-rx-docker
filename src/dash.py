@@ -297,12 +297,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if len(path) >= 2:
                 filename = "/".join(path[1:])
                 timelapses_dir = os.path.join(os.path.dirname(dash_config.output), "timelapses")
-                timelapse_path = os.path.normpath(os.path.join(timelapses_dir, filename))
-                # Ensure the normalized path is within the timelapses_dir
-                if (os.path.isfile(timelapse_path)
-                    and os.path.commonpath([timelapse_path, timelapses_dir]) == timelapses_dir):
-                    mime = mimetypes.guess_type(timelapse_path)[0] or 'application/octet-stream'
-                    content = open(timelapse_path, 'rb').read()
+                # Normalize and resolve symlinks
+                timelapses_dir_real = os.path.realpath(timelapses_dir)
+                timelapse_path = os.path.normpath(os.path.join(timelapses_dir_real, filename))
+                timelapse_path_real = os.path.realpath(timelapse_path)
+                # Ensure the normalized path is within the timelapses_dir and is not absolute
+                if (
+                    os.path.isfile(timelapse_path_real)
+                    and timelapse_path_real.startswith(timelapses_dir_real + os.sep)
+                    and not os.path.isabs(filename)
+                ):
+                    mime = mimetypes.guess_type(timelapse_path_real)[0] or 'application/octet-stream'
+                    content = open(timelapse_path_real, 'rb').read()
                 else:
                     status = 404
                     content = {'error': 'Timelapse file not found'}
