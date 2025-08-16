@@ -298,14 +298,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 filename = "/".join(path[1:])
                 timelapses_dir = os.path.join(os.path.dirname(dash_config.output), "timelapses")
                 timelapse_path = os.path.join(timelapses_dir, filename)
-                
-                if os.path.isfile(timelapse_path) and self.is_safe_path(timelapse_path):
-                    mime = mimetypes.guess_type(timelapse_path)[0] or 'application/octet-stream'
-                    content = open(timelapse_path, 'rb').read()
+                # Normalize the path and ensure it is within timelapses_dir
+                normalized_path = os.path.normpath(timelapse_path)
+                if not normalized_path.startswith(os.path.abspath(timelapses_dir) + os.sep):
+                    status = 403
+                    content = {'error': 'Access denied'}
+                elif os.path.isfile(normalized_path):
+                    mime = mimetypes.guess_type(normalized_path)[0] or 'application/octet-stream'
+                    content = open(normalized_path, 'rb').read()
                 else:
                     status = 404
                     content = {'error': 'Timelapse file not found'}
-            else:
                 # List available timelapses when no filename specified
                 content = self.list_timelapses()
         
