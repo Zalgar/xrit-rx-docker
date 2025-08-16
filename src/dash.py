@@ -304,16 +304,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 # Normalize the path and ensure it is within timelapses_dir
                 normalized_path = os.path.normpath(timelapse_path)
                 
-                # Use normalized paths for comparison and handle Windows paths correctly
-                if not (normalized_path.startswith(timelapses_dir + os.sep) or normalized_path == timelapses_dir):
+                # Use os.path.commonpath for robust cross-platform security check
+                try:
+                    if os.path.commonpath([normalized_path, timelapses_dir]) != timelapses_dir:
+                        status = 403
+                        content = {'error': 'Access denied'}
+                    elif os.path.isfile(normalized_path):
+                        mime = mimetypes.guess_type(normalized_path)[0] or 'application/octet-stream'
+                        content = open(normalized_path, 'rb').read()
+                    else:
+                        status = 404
+                        content = {'error': 'Timelapse file not found'}
+                except ValueError:
+                    # commonpath raises ValueError if paths are on different drives (Windows) or have no common path
                     status = 403
                     content = {'error': 'Access denied'}
-                elif os.path.isfile(normalized_path):
-                    mime = mimetypes.guess_type(normalized_path)[0] or 'application/octet-stream'
-                    content = open(normalized_path, 'rb').read()
-                else:
-                    status = 404
-                    content = {'error': 'Timelapse file not found'}
             else:
                 # List available timelapses when no filename specified or empty filename
                 content = self.list_timelapses()
