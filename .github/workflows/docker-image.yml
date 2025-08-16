@@ -41,27 +41,73 @@ jobs:
           CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           
+          echo "=== Debug: Current version is $CURRENT_VERSION ==="
+          
           # Check if this version tag already exists
           if git tag -l | grep -q "^v$CURRENT_VERSION$"; then
             echo "Version $CURRENT_VERSION already has a tag"
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "should_release=false" >> $GITHUB_OUTPUT
           else
+            echo "No existing tag found for v$CURRENT_VERSION"
+            
+            # Get the previous version from the last commit
+            echo "=== Debug: Checking git history ==="
+            git log --oneline -5
+            echo "=== Debug: Files changed in latest commit ==="
+            git diff HEAD~1 HEAD --name-only
+            echo "=== Debug: Checking for xrit-rx.py changes ==="
+            
             # Check if version line was modified in the latest commit
             if git diff HEAD~1 HEAD --name-only | grep -q "src/xrit-rx.py"; then
+              echo "src/xrit-rx.py was modified in latest commit"
+              echo "=== Debug: Version line changes ==="
+              git diff HEAD~1 HEAD src/xrit-rx.py | grep "ver = " || echo "No version line changes found"
+              
               if git diff HEAD~1 HEAD src/xrit-rx.py | grep -q "^[+-]ver = "; then
-                echo "Version changed to $CURRENT_VERSION"
-                echo "changed=true" >> $GITHUB_OUTPUT
-                echo "should_release=true" >> $GITHUB_OUTPUT
+                echo "Version line was changed"
+                
+                # Get the old version to compare
+                OLD_VERSION=$(git show HEAD~1:src/xrit-rx.py | grep -E "^ver = " | sed 's/ver = "\(.*\)".*/\1/' || echo "unknown")
+                echo "Previous version: $OLD_VERSION"
+                echo "Current version: $CURRENT_VERSION"
+                
+                if [ "$OLD_VERSION" != "$CURRENT_VERSION" ]; then
+                  echo "Version changed from $OLD_VERSION to $CURRENT_VERSION"
+                  echo "changed=true" >> $GITHUB_OUTPUT
+                  echo "should_release=true" >> $GITHUB_OUTPUT
+                else
+                  echo "Version line changed but version is the same"
+                  echo "changed=false" >> $GITHUB_OUTPUT
+                  echo "should_release=false" >> $GITHUB_OUTPUT
+                fi
               else
-                echo "xrit-rx.py changed but version didn't change"
+                echo "xrit-rx.py changed but version line didn't change"
                 echo "changed=false" >> $GITHUB_OUTPUT
                 echo "should_release=false" >> $GITHUB_OUTPUT
               fi
             else
-              echo "xrit-rx.py was not modified"
-              echo "changed=false" >> $GITHUB_OUTPUT
-              echo "should_release=false" >> $GITHUB_OUTPUT
+              echo "src/xrit-rx.py was not modified in latest commit"
+              
+              # Alternative: Check if this is a new version compared to the latest tag
+              LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+              if [ -n "$LATEST_TAG" ]; then
+                LATEST_VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
+                echo "Latest tag version: $LATEST_VERSION"
+                if [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]; then
+                  echo "Current version $CURRENT_VERSION differs from latest tag $LATEST_VERSION"
+                  echo "changed=true" >> $GITHUB_OUTPUT
+                  echo "should_release=true" >> $GITHUB_OUTPUT
+                else
+                  echo "Current version matches latest tag"
+                  echo "changed=false" >> $GITHUB_OUTPUT
+                  echo "should_release=false" >> $GITHUB_OUTPUT
+                fi
+              else
+                echo "No existing tags found, treating as new version"
+                echo "changed=true" >> $GITHUB_OUTPUT
+                echo "should_release=true" >> $GITHUB_OUTPUT
+              fi
             fi
           fi
           
