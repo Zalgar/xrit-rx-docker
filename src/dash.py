@@ -310,6 +310,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 else:
                     status = 404
                     content = {'error': 'Timelapse file not found'}
+            else:
                 # List available timelapses when no filename specified
                 content = self.list_timelapses()
         
