@@ -55,7 +55,7 @@ log_max_size = None     # Log file max size in MB
 log_backup_count = None # Number of backup log files
 dashp = None            # Dashboard HTTP port
 dashi = None            # Dashboard refresh interval (sec)
-ver = "2.1.1"           # xrit-rx version
+ver = "2025.08.16-21.45"           # xrit-rx version
 
 
 def start_timelapse_service():

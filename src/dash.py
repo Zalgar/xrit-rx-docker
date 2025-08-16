@@ -295,13 +295,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         
         elif path[0] == "timelapses":                          # Direct timelapse file serving from sibling directory
             # /api/timelapses/{filename} - serve timelapse files from timelapses/ directory
-            if len(path) >= 2:
+            if len(path) >= 2 and path[1]:  # Check that filename is not empty
                 filename = "/".join(path[1:])
-                timelapses_dir = os.path.join(os.path.dirname(dash_config.output), "timelapses")
+                # Get absolute path to timelapses directory
+                output_dir = os.path.abspath(dash_config.output)
+                timelapses_dir = os.path.join(os.path.dirname(output_dir), "timelapses")
                 timelapse_path = os.path.join(timelapses_dir, filename)
                 # Normalize the path and ensure it is within timelapses_dir
                 normalized_path = os.path.normpath(timelapse_path)
-                if not normalized_path.startswith(os.path.abspath(timelapses_dir) + os.sep):
+                
+                # Use normalized paths for comparison and handle Windows paths correctly
+                if not (normalized_path.startswith(timelapses_dir + os.sep) or normalized_path == timelapses_dir):
                     status = 403
                     content = {'error': 'Access denied'}
                 elif os.path.isfile(normalized_path):
@@ -311,7 +315,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     status = 404
                     content = {'error': 'Timelapse file not found'}
             else:
-                # List available timelapses when no filename specified
+                # List available timelapses when no filename specified or empty filename
                 content = self.list_timelapses()
         
         elif "/".join(path).startswith(dash_config.output):     # Endpoint starts with demuxer output root path
@@ -444,7 +448,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """
         List available timelapse files
         """
-        timelapses_dir = os.path.join(os.path.dirname(dash_config.output), "timelapses")
+        # Get absolute path to timelapses directory
+        output_dir = os.path.abspath(dash_config.output)
+        timelapses_dir = os.path.join(os.path.dirname(output_dir), "timelapses")
         if not os.path.exists(timelapses_dir):
             return {'timelapses': []}
         
