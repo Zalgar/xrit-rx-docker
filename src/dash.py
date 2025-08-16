@@ -297,9 +297,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if len(path) >= 2:
                 filename = "/".join(path[1:])
                 timelapses_dir = os.path.join(os.path.dirname(dash_config.output), "timelapses")
-                timelapse_path = os.path.join(timelapses_dir, filename)
-                
-                if os.path.isfile(timelapse_path) and self.is_safe_path(timelapse_path):
+                timelapse_path = os.path.normpath(os.path.join(timelapses_dir, filename))
+                # Ensure the normalized path is within the timelapses_dir
+                if (os.path.isfile(timelapse_path)
+                    and os.path.commonpath([timelapse_path, timelapses_dir]) == timelapses_dir):
                     mime = mimetypes.guess_type(timelapse_path)[0] or 'application/octet-stream'
                     content = open(timelapse_path, 'rb').read()
                 else:
